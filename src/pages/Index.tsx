@@ -1,5 +1,6 @@
 import heroImg from "@/assets/hero-kebab.jpg";
 import TrustBlock from "@/components/TrustBlock";
+import MenuSection from "@/components/MenuSection";
 
 const Index = () => (
   <main className="pt-16">
@@ -36,6 +37,9 @@ const Index = () => (
 
     {/* Trust Block */}
     <TrustBlock />
+
+    {/* Carta */}
+    <MenuSection />
 
     {/* SEO Extra Block */}
     <section className="py-16 bg-background">
