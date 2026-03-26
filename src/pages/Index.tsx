@@ -6,6 +6,7 @@ import RestaurantJsonLd from "@/components/RestaurantJsonLd";
 
 const Index = () => (
   <main className="pt-16">
+    <RestaurantJsonLd />
     {/* Hero */}
     <section className="relative h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden">
       <img
