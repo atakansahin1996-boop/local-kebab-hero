@@ -51,7 +51,7 @@ const MENU: MenuItem[] = [
 const CATEGORIES = [...new Set(MENU.map((m) => m.category))];
 
 // ⚠️ CAMBIAR ESTE NÚMERO POR EL REAL
-const WHATSAPP_NUMBER = "34600000000";
+const WHATSAPP_NUMBER = "34697878655";
 
 type CartItem = { item: MenuItem; qty: number };
 
