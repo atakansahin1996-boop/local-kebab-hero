@@ -1,6 +1,7 @@
 import heroImg from "@/assets/hero-kebab.jpg";
 import TrustBlock from "@/components/TrustBlock";
 import MenuSection from "@/components/MenuSection";
+import OrderForm from "@/components/OrderForm";
 
 const Index = () => (
   <main className="pt-16">
@@ -40,6 +41,9 @@ const Index = () => (
 
     {/* Carta */}
     <MenuSection />
+
+    {/* Formulario de pedido */}
+    <OrderForm />
 
     {/* SEO Extra Block */}
     <section className="py-16 bg-background">
