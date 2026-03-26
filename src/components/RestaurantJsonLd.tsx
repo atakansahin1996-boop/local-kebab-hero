@@ -23,15 +23,15 @@ const jsonLd = {
   openingHoursSpecification: [
     {
       "@type": "OpeningHoursSpecification",
-      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Sunday"],
+      dayOfWeek: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
       opens: "12:00",
-      closes: "23:00",
+      closes: "16:00",
     },
     {
       "@type": "OpeningHoursSpecification",
-      dayOfWeek: ["Friday", "Saturday"],
-      opens: "12:00",
-      closes: "00:00",
+      dayOfWeek: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      opens: "19:00",
+      closes: "23:30",
     },
   ],
   hasMenu: {
