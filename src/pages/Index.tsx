@@ -2,6 +2,7 @@ import heroImg from "@/assets/hero-kebab.jpg";
 import TrustBlock from "@/components/TrustBlock";
 import MenuSection from "@/components/MenuSection";
 import OrderForm from "@/components/OrderForm";
+import RestaurantJsonLd from "@/components/RestaurantJsonLd";
 
 const Index = () => (
   <main className="pt-16">
