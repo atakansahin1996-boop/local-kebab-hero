@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Restaurant",
-  name: "KebabExpress",
+  name: "Almas Comilonas",
   description:
     "Kebab a domicilio en Moratalaz, Valdebernardo y Vicálvaro. Durums, platos kebab, pizzas turcas y menús completos con entrega rápida.",
   servesCuisine: ["Turca", "Kebab"],
@@ -36,7 +36,7 @@ const jsonLd = {
   ],
   hasMenu: {
     "@type": "Menu",
-    name: "Carta KebabExpress",
+    name: "Carta Almas Comilonas",
     hasMenuSection: [
       {
         "@type": "MenuSection",
