@@ -87,7 +87,7 @@ const OrderForm = () => {
   const buildWhatsAppMessage = () => {
     const items = cart.map((c) => `• ${c.qty}x ${c.item.name} — ${(c.item.price * c.qty).toFixed(2)}€`).join("\n");
     const lines = [
-      "🔥 *NUEVO PEDIDO — KebabExpress*",
+      "🔥 *NUEVO PEDIDO — Almas Comilonas*",
       "",
       `👤 *Nombre:* ${name}`,
       `📞 *Teléfono:* ${phone}`,

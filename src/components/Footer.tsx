@@ -5,7 +5,7 @@ const Footer = () => (
         Servicio de kebab a domicilio en Moratalaz, Valdebernardo y Vicálvaro. Pedido online rápido para recoger en local o entrega en casa.
       </p>
       <p className="text-muted-foreground text-xs">
-        © {new Date().getFullYear()} KebabExpress. Todos los derechos reservados.
+        © {new Date().getFullYear()} Almas Comilonas. Todos los derechos reservados.
       </p>
     </div>
   </footer>
