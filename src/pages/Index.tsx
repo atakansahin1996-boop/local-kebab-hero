@@ -42,6 +42,9 @@ const Index = () => (
     {/* Carta */}
     <MenuSection />
 
+    {/* Formulario de pedido */}
+    <OrderForm />
+
     {/* SEO Extra Block */}
     <section className="py-16 bg-background">
       <div className="container max-w-2xl text-center">
