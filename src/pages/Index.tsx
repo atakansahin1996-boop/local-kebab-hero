@@ -1,5 +1,6 @@
 import heroImg from "@/assets/hero-kebab.jpg";
 import TrustBlock from "@/components/TrustBlock";
+import MenuSection from "@/components/MenuSection";
 
 const Index = () => (
   <main className="pt-16">
