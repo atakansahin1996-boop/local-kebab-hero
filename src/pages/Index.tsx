@@ -1,7 +1,8 @@
-import heroImg from "@/assets/hero-kebab.jpg";
+import kebabImg from "@/assets/kebab.jpeg";
 import TrustBlock from "@/components/TrustBlock";
 import MenuSection from "@/components/MenuSection";
 import OrderForm from "@/components/OrderForm";
+import GallerySection from "@/components/GallerySection";
 import RestaurantJsonLd from "@/components/RestaurantJsonLd";
 
 const Index = () => (
@@ -10,7 +11,7 @@ const Index = () => (
     {/* Hero */}
     <section className="relative h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden">
       <img
-        src={heroImg}
+        src={kebabImg}
         alt="Kebab a domicilio en Moratalaz, Valdebernardo y Vicálvaro"
         className="absolute inset-0 w-full h-full object-cover"
         width={1920}
@@ -40,6 +41,9 @@ const Index = () => (
 
     {/* Trust Block */}
     <TrustBlock />
+
+    {/* Galería */}
+    <GallerySection />
 
     {/* Carta */}
     <MenuSection />
