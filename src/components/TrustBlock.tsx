@@ -23,7 +23,7 @@ const TrustBlock = () => (
         <div className="flex flex-col items-center gap-3 p-6">
           <Clock className="text-primary" size={32} />
           <h3 className="font-display text-lg text-foreground">Entrega rápida</h3>
-          <p className="text-foreground/70 text-sm">Aproximada: 20–25 minutos.</p>
+          <p className="text-foreground/70 text-sm">Aproximada: 45–60 minutos.</p>
         </div>
       </div>
     </div>
