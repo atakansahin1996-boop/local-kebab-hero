@@ -1,59 +1,60 @@
 import { useState } from "react";
-import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type MenuItem = { name: string; price: number; category: string };
 
 const MENU: MenuItem[] = [
-  // Kebab
   { name: "Kebab Normal", price: 6.0, category: "Kebab" },
   { name: "Kebab Con queso", price: 6.7, category: "Kebab" },
   { name: "Kebab Doble", price: 7.5, category: "Kebab" },
   { name: "Kebab Doble con queso", price: 8.2, category: "Kebab" },
   { name: "Kebab Falafel", price: 6.0, category: "Kebab" },
   { name: "Kebab Vegetal", price: 5.5, category: "Kebab" },
-  // Durum
   { name: "Durum Normal", price: 6.5, category: "Durum" },
   { name: "Durum Con queso", price: 7.2, category: "Durum" },
   { name: "Durum Doble", price: 8.0, category: "Durum" },
   { name: "Durum Doble con queso", price: 8.7, category: "Durum" },
   { name: "Durum Falafel", price: 6.5, category: "Durum" },
   { name: "Durum Vegetal", price: 6.0, category: "Durum" },
-  // Plato
   { name: "Plato con ensalada", price: 8.0, category: "Plato" },
   { name: "Plato con patatas o arroz", price: 9.0, category: "Plato" },
   { name: "Plato con patatas y arroz", price: 10.0, category: "Plato" },
   { name: "Plato Falafel", price: 8.0, category: "Plato" },
   { name: "Plato Antep", price: 10.0, category: "Plato" },
-  // Menú
   { name: "Menú Kebab", price: 9.5, category: "Menú" },
   { name: "Menú Durum", price: 10.0, category: "Menú" },
   { name: "Menú Plato", price: 11.0, category: "Menú" },
   { name: "Menú Infantil", price: 9.0, category: "Menú" },
   { name: "Menú Alitas", price: 9.0, category: "Menú" },
-  // Alitas
   { name: "4 alitas", price: 4.5, category: "Alitas" },
   { name: "7 alitas", price: 6.0, category: "Alitas" },
   { name: "12 alitas", price: 10.5, category: "Alitas" },
   { name: "5 alitas y patatas", price: 7.5, category: "Alitas" },
   { name: "15 alitas y patatas", price: 13.0, category: "Alitas" },
-  // Raciones
   { name: "Patatas", price: 4.0, category: "Raciones" },
   { name: "Arroz", price: 3.0, category: "Raciones" },
   { name: "Nuggets", price: 5.0, category: "Raciones" },
   { name: "Palitos de queso", price: 6.0, category: "Raciones" },
   { name: "Falafel (ración)", price: 5.0, category: "Raciones" },
   { name: "Box Kebab", price: 6.0, category: "Raciones" },
-  // Bebidas
   { name: "Refrescos", price: 2.8, category: "Bebidas" },
   { name: "Agua", price: 1.5, category: "Bebidas" },
 ];
 
 const CATEGORIES = [...new Set(MENU.map((m) => m.category))];
-
-// ⚠️ CAMBIAR ESTE NÚMERO POR EL REAL
 const WHATSAPP_NUMBER = "34697878655";
+const BIZUM_NUMBER = "629 954 510";
 
-type CartItem = { item: MenuItem; qty: number };
+const INGREDIENTS = ["Lechuga", "Cebolla", "Tomate", "Salsa blanca", "Salsa roja"];
+const CATEGORIES_WITH_INGREDIENTS = ["Kebab", "Durum", "Plato", "Menú"];
+const BILL_OPTIONS = [5, 10, 20, 50, 100];
+
+type CartItem = {
+  item: MenuItem;
+  qty: number;
+  removedIngredients: string[];
+};
 
 const OrderForm = () => {
   const [activeCat, setActiveCat] = useState(0);
@@ -64,20 +65,43 @@ const OrderForm = () => {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [method, setMethod] = useState<"domicilio" | "recoger">("domicilio");
+  const [payment, setPayment] = useState<"efectivo" | "bizum">("efectivo");
+  const [billAmount, setBillAmount] = useState<number | null>(null);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
+
+  const hasIngredients = (item: MenuItem) =>
+    CATEGORIES_WITH_INGREDIENTS.includes(item.category);
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.item.name === item.name);
-      if (existing) return prev.map((c) => (c.item.name === item.name ? { ...c, qty: c.qty + 1 } : c));
-      return [...prev, { item, qty: 1 }];
+      if (existing)
+        return prev.map((c) =>
+          c.item.name === item.name ? { ...c, qty: c.qty + 1 } : c
+        );
+      return [...prev, { item, qty: 1, removedIngredients: [] }];
     });
   };
 
   const updateQty = (itemName: string, delta: number) => {
     setCart((prev) =>
       prev
-        .map((c) => (c.item.name === itemName ? { ...c, qty: c.qty + delta } : c))
+        .map((c) =>
+          c.item.name === itemName ? { ...c, qty: c.qty + delta } : c
+        )
         .filter((c) => c.qty > 0)
+    );
+  };
+
+  const toggleIngredient = (itemName: string, ingredient: string) => {
+    setCart((prev) =>
+      prev.map((c) => {
+        if (c.item.name !== itemName) return c;
+        const removed = c.removedIngredients.includes(ingredient)
+          ? c.removedIngredients.filter((i) => i !== ingredient)
+          : [...c.removedIngredients, ingredient];
+        return { ...c, removedIngredients: removed };
+      })
     );
   };
 
@@ -85,18 +109,35 @@ const OrderForm = () => {
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
 
   const buildWhatsAppMessage = () => {
-    const items = cart.map((c) => `• ${c.qty}x ${c.item.name} — ${(c.item.price * c.qty).toFixed(2)}€`).join("\n");
+    const items = cart
+      .map((c) => {
+        let line = `• ${c.qty}x ${c.item.name} — ${(c.item.price * c.qty).toFixed(2)}€`;
+        if (c.removedIngredients.length > 0) {
+          line += `\n   ❌ Sin: ${c.removedIngredients.join(", ")}`;
+        }
+        return line;
+      })
+      .join("\n");
+
+    const paymentLine =
+      payment === "bizum"
+        ? `💳 *Pago:* Bizum al ${BIZUM_NUMBER}`
+        : `💵 *Pago:* Efectivo${billAmount ? ` (billete de ${billAmount}€)` : ""}`;
+
     const lines = [
       "🔥 *NUEVO PEDIDO — Almas Comilonas*",
       "",
       `👤 *Nombre:* ${name}`,
       `📞 *Teléfono:* ${phone}`,
-      method === "domicilio" ? `📍 *Dirección:* ${address}` : "🏪 *Recogida en local*",
+      method === "domicilio"
+        ? `📍 *Dirección:* ${address}`
+        : "🏪 *Recogida en local*",
       "",
       "🧾 *Pedido:*",
       items,
       "",
       `💰 *Total: ${total.toFixed(2)}€*`,
+      paymentLine,
       notes ? `\n📝 *Notas:* ${notes}` : "",
     ];
     return lines.filter(Boolean).join("\n");
@@ -105,11 +146,96 @@ const OrderForm = () => {
   const handleSend = () => {
     if (!name.trim() || !phone.trim()) return;
     if (method === "domicilio" && !address.trim()) return;
+    if (payment === "efectivo" && !billAmount) return;
     const msg = encodeURIComponent(buildWhatsAppMessage());
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
   };
 
-  const isFormValid = name.trim() && phone.trim() && (method === "recoger" || address.trim());
+  const isFormValid =
+    name.trim() &&
+    phone.trim() &&
+    (method === "recoger" || address.trim()) &&
+    (payment === "bizum" || billAmount);
+
+  /* ─── Product card with ingredient toggles ─── */
+  const ProductCard = ({ item }: { item: MenuItem }) => {
+    const inCart = cart.find((c) => c.item.name === item.name);
+    const isExpanded = expandedItem === item.name;
+    const showIngredients = hasIngredients(item) && inCart;
+
+    return (
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground text-sm font-medium truncate">
+              {item.name}
+            </p>
+            <p className="text-primary font-bold text-sm">
+              {item.price.toFixed(2)}€
+            </p>
+          </div>
+          {inCart ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => updateQty(item.name, -1)}
+                className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-foreground hover:bg-destructive hover:text-accent-foreground transition"
+              >
+                {inCart.qty === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+              </button>
+              <span className="text-foreground text-sm font-bold w-5 text-center">
+                {inCart.qty}
+              </span>
+              <button
+                onClick={() => addToCart(item)}
+                className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground transition hover:brightness-110"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => addToCart(item)}
+              className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:brightness-110 transition"
+            >
+              Añadir
+            </button>
+          )}
+        </div>
+
+        {showIngredients && (
+          <button
+            onClick={() => setExpandedItem(isExpanded ? null : item.name)}
+            className="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-muted-foreground hover:text-foreground border-t border-border transition"
+          >
+            {inCart.removedIngredients.length > 0
+              ? `Sin: ${inCart.removedIngredients.join(", ")}`
+              : "Personalizar ingredientes"}
+            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+        )}
+
+        {showIngredients && isExpanded && (
+          <div className="px-4 py-2 border-t border-border bg-muted/30 space-y-1.5">
+            <p className="text-xs text-muted-foreground font-medium mb-1">
+              Quitar ingredientes:
+            </p>
+            {INGREDIENTS.map((ing) => (
+              <label
+                key={ing}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Checkbox
+                  checked={inCart.removedIngredients.includes(ing)}
+                  onCheckedChange={() => toggleIngredient(item.name, ing)}
+                />
+                <span className="text-sm text-foreground">{ing}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <section id="pedir" className="py-16 bg-secondary">
@@ -139,44 +265,11 @@ const OrderForm = () => {
 
             {/* Product list */}
             <div className="space-y-2 mb-6">
-              {MENU.filter((m) => m.category === CATEGORIES[activeCat]).map((item) => {
-                const inCart = cart.find((c) => c.item.name === item.name);
-                return (
-                  <div
-                    key={item.name}
-                    className="flex items-center justify-between bg-card rounded-lg px-4 py-3 border border-border"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-foreground text-sm font-medium truncate">{item.name}</p>
-                      <p className="text-primary font-bold text-sm">{item.price.toFixed(2)}€</p>
-                    </div>
-                    {inCart ? (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => updateQty(item.name, -1)}
-                          className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-foreground hover:bg-destructive hover:text-accent-foreground transition"
-                        >
-                          {inCart.qty === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
-                        </button>
-                        <span className="text-foreground text-sm font-bold w-5 text-center">{inCart.qty}</span>
-                        <button
-                          onClick={() => addToCart(item)}
-                          className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground transition hover:brightness-110"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => addToCart(item)}
-                        className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:brightness-110 transition"
-                      >
-                        Añadir
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+              {MENU.filter((m) => m.category === CATEGORIES[activeCat]).map(
+                (item) => (
+                  <ProductCard key={item.name} item={item} />
+                )
+              )}
             </div>
 
             {/* Cart summary bar */}
@@ -200,31 +293,55 @@ const OrderForm = () => {
               {cart.map((c) => (
                 <div
                   key={c.item.name}
-                  className="flex items-center justify-between bg-card rounded-lg px-4 py-3 border border-border"
+                  className="bg-card rounded-lg px-4 py-3 border border-border"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-foreground text-sm font-medium">{c.qty}x {c.item.name}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-primary font-bold text-sm">{(c.item.price * c.qty).toFixed(2)}€</span>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => updateQty(c.item.name, -1)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground">
-                        {c.qty === 1 ? <Trash2 size={12} /> : <Minus size={12} />}
-                      </button>
-                      <button onClick={() => addToCart(c.item)} className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground">
-                        <Plus size={12} />
-                      </button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground text-sm font-medium">
+                        {c.qty}x {c.item.name}
+                      </p>
+                      {c.removedIngredients.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          ❌ Sin: {c.removedIngredients.join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-primary font-bold text-sm">
+                        {(c.item.price * c.qty).toFixed(2)}€
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => updateQty(c.item.name, -1)}
+                          className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground"
+                        >
+                          {c.qty === 1 ? (
+                            <Trash2 size={12} />
+                          ) : (
+                            <Minus size={12} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => addToCart(c.item)}
+                          className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
               <div className="flex justify-between px-4 py-3 font-bold text-foreground">
                 <span>Total</span>
-                <span className="text-primary text-lg">{total.toFixed(2)}€</span>
+                <span className="text-primary text-lg">
+                  {total.toFixed(2)}€
+                </span>
               </div>
               {total < 15 && method === "domicilio" && (
                 <p className="text-accent text-xs text-center font-medium">
-                  ⚠️ Pedido mínimo a domicilio: 15€ (faltan {(15 - total).toFixed(2)}€)
+                  ⚠️ Pedido mínimo a domicilio: 15€ (faltan{" "}
+                  {(15 - total).toFixed(2)}€)
                 </p>
               )}
             </div>
@@ -246,10 +363,88 @@ const OrderForm = () => {
               ))}
             </div>
 
+            {/* Payment method */}
+            <div className="mb-4">
+              <p className="text-foreground text-sm font-semibold mb-2">
+                Método de pago
+              </p>
+              <div className="flex gap-2 mb-3">
+                {(["efectivo", "bizum"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setPayment(p);
+                      if (p === "bizum") setBillAmount(null);
+                    }}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                      payment === p
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {p === "efectivo" ? "💵 Efectivo" : "💳 Bizum"}
+                  </button>
+                ))}
+              </div>
+
+              {payment === "efectivo" && (
+                <div>
+                  <p className="text-muted-foreground text-xs mb-2">
+                    ¿Con qué billete pagas? (para preparar el cambio)
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {BILL_OPTIONS.map((bill) => (
+                      <button
+                        key={bill}
+                        onClick={() => setBillAmount(bill)}
+                        disabled={bill < total}
+                        className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                          billAmount === bill
+                            ? "bg-primary text-primary-foreground"
+                            : bill < total
+                            ? "bg-muted text-muted-foreground/40 cursor-not-allowed"
+                            : "bg-muted text-muted-foreground hover:bg-primary/20"
+                        }`}
+                      >
+                        {bill}€
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setBillAmount(-1)}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        billAmount === -1
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-primary/20"
+                      }`}
+                    >
+                      Exacto
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {payment === "bizum" && (
+                <div className="bg-card border border-primary/30 rounded-lg px-4 py-3 text-center">
+                  <p className="text-muted-foreground text-xs mb-1">
+                    Realiza el Bizum a:
+                  </p>
+                  <p className="text-primary font-bold text-lg tracking-wider">
+                    {BIZUM_NUMBER}
+                  </p>
+                  <p className="text-muted-foreground text-xs mt-1">
+                    Importe: {total.toFixed(2)}€
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Customer details */}
             <div className="space-y-3 mb-6">
               <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <User
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <input
                   type="text"
                   placeholder="Tu nombre"
@@ -260,7 +455,10 @@ const OrderForm = () => {
                 />
               </div>
               <div className="relative">
-                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Phone
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <input
                   type="tel"
                   placeholder="Teléfono de contacto"
@@ -272,7 +470,10 @@ const OrderForm = () => {
               </div>
               {method === "domicilio" && (
                 <div className="relative">
-                  <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <MapPin
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
                   <input
                     type="text"
                     placeholder="Dirección de entrega"
@@ -284,7 +485,7 @@ const OrderForm = () => {
                 </div>
               )}
               <textarea
-                placeholder="Notas (opcional): sin cebolla, extra picante..."
+                placeholder="Notas (opcional): extra picante..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={500}
@@ -303,7 +504,9 @@ const OrderForm = () => {
               </button>
               <button
                 onClick={handleSend}
-                disabled={!isFormValid || (method === "domicilio" && total < 15)}
+                disabled={
+                  !isFormValid || (method === "domicilio" && total < 15)
+                }
                 className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Enviar pedido por WhatsApp
