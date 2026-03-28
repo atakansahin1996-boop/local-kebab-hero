@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -51,10 +51,15 @@ const CATEGORIES_WITH_INGREDIENTS = ["Kebab", "Durum", "Plato", "Menú"];
 const BILL_OPTIONS = [5, 10, 20, 50, 100];
 
 type CartItem = {
+  id: string;
   item: MenuItem;
-  qty: number;
   removedIngredients: string[];
 };
+
+const ORDER_SECTION_ID = "pedido-online";
+
+const createCartItemId = () =>
+  `cart-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 const OrderForm = () => {
   const [activeCat, setActiveCat] = useState(0);
@@ -67,36 +72,51 @@ const OrderForm = () => {
   const [method, setMethod] = useState<"domicilio" | "recoger">("domicilio");
   const [payment, setPayment] = useState<"efectivo" | "bizum">("efectivo");
   const [billAmount, setBillAmount] = useState<number | null>(null);
-  const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   const hasIngredients = (item: MenuItem) =>
     CATEGORIES_WITH_INGREDIENTS.includes(item.category);
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: MenuItem, goToCart = false) => {
+    const newCartItem: CartItem = {
+      id: createCartItemId(),
+      item,
+      removedIngredients: [],
+    };
+
+    setCart((prev) => [...prev, newCartItem]);
+
+    if (goToCart) {
+      setStep("carrito");
+      setExpandedItemId(newCartItem.id);
+    }
+  };
+
+  const removeOneByName = (itemName: string) => {
     setCart((prev) => {
-      const existing = prev.find((c) => c.item.name === item.name);
-      if (existing)
-        return prev.map((c) =>
-          c.item.name === item.name ? { ...c, qty: c.qty + 1 } : c
-        );
-      return [...prev, { item, qty: 1, removedIngredients: [] }];
+      let indexToRemove = -1;
+      for (let i = prev.length - 1; i >= 0; i -= 1) {
+        if (prev[i].item.name === itemName) {
+          indexToRemove = i;
+          break;
+        }
+      }
+
+      if (indexToRemove === -1) return prev;
+
+      return prev.filter((_, idx) => idx !== indexToRemove);
     });
   };
 
-  const updateQty = (itemName: string, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((c) =>
-          c.item.name === itemName ? { ...c, qty: c.qty + delta } : c
-        )
-        .filter((c) => c.qty > 0)
-    );
+  const removeById = (itemId: string) => {
+    setCart((prev) => prev.filter((c) => c.id !== itemId));
+    setExpandedItemId((prev) => (prev === itemId ? null : prev));
   };
 
-  const toggleIngredient = (itemName: string, ingredient: string) => {
+  const toggleIngredient = (itemId: string, ingredient: string) => {
     setCart((prev) =>
       prev.map((c) => {
-        if (c.item.name !== itemName) return c;
+        if (c.id !== itemId) return c;
         const removed = c.removedIngredients.includes(ingredient)
           ? c.removedIngredients.filter((i) => i !== ingredient)
           : [...c.removedIngredients, ingredient];
@@ -105,11 +125,39 @@ const OrderForm = () => {
     );
   };
 
-  const total = cart.reduce((sum, c) => sum + c.item.price * c.qty, 0);
-  const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
+  const countByProductName = (itemName: string) =>
+    cart.filter((c) => c.item.name === itemName).length;
+
+  const total = cart.reduce((sum, c) => sum + c.item.price, 0);
+  const cartCount = cart.length;
+
+  const groupedForMessage = useMemo(() => {
+    const grouped = new Map<
+      string,
+      { qty: number; item: MenuItem; removedIngredients: string[] }
+    >();
+
+    cart.forEach((cartItem) => {
+      const ingredientsKey = [...cartItem.removedIngredients].sort().join("|");
+      const key = `${cartItem.item.name}|${ingredientsKey}`;
+      const existing = grouped.get(key);
+
+      if (existing) {
+        grouped.set(key, { ...existing, qty: existing.qty + 1 });
+      } else {
+        grouped.set(key, {
+          qty: 1,
+          item: cartItem.item,
+          removedIngredients: cartItem.removedIngredients,
+        });
+      }
+    });
+
+    return Array.from(grouped.values());
+  }, [cart]);
 
   const buildWhatsAppMessage = () => {
-    const items = cart
+    const items = groupedForMessage
       .map((c) => {
         let line = `• ${c.qty}x ${c.item.name} — ${(c.item.price * c.qty).toFixed(2)}€`;
         if (c.removedIngredients.length > 0) {
@@ -144,24 +192,22 @@ const OrderForm = () => {
   };
 
   const handleSend = () => {
-    if (!name.trim() || !phone.trim()) return;
+    if (cart.length === 0 || !name.trim() || !phone.trim()) return;
     if (method === "domicilio" && !address.trim()) return;
-    if (payment === "efectivo" && !billAmount) return;
+    if (payment === "efectivo" && (!billAmount || (billAmount > 0 && billAmount < total))) return;
     const msg = encodeURIComponent(buildWhatsAppMessage());
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
   };
 
   const isFormValid =
+    cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
     (method === "recoger" || address.trim()) &&
-    (payment === "bizum" || billAmount);
+    (payment === "bizum" || (billAmount && (billAmount === -1 || billAmount >= total)));
 
-  /* ─── Product card with ingredient toggles ─── */
   const ProductCard = ({ item }: { item: MenuItem }) => {
-    const inCart = cart.find((c) => c.item.name === item.name);
-    const isExpanded = expandedItem === item.name;
-    const showIngredients = hasIngredients(item) && inCart;
+    const count = countByProductName(item.name);
 
     return (
       <div className="bg-card rounded-lg border border-border overflow-hidden">
@@ -174,19 +220,19 @@ const OrderForm = () => {
               {item.price.toFixed(2)}€
             </p>
           </div>
-          {inCart ? (
+          {count > 0 ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => updateQty(item.name, -1)}
+                onClick={() => removeOneByName(item.name)}
                 className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-foreground hover:bg-destructive hover:text-accent-foreground transition"
               >
-                {inCart.qty === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+                {count === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
               </button>
               <span className="text-foreground text-sm font-bold w-5 text-center">
-                {inCart.qty}
+                {count}
               </span>
               <button
-                onClick={() => addToCart(item)}
+                onClick={() => addToCart(item, true)}
                 className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground transition hover:brightness-110"
               >
                 <Plus size={14} />
@@ -194,7 +240,7 @@ const OrderForm = () => {
             </div>
           ) : (
             <button
-              onClick={() => addToCart(item)}
+              onClick={() => addToCart(item, true)}
               className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:brightness-110 transition"
             >
               Añadir
@@ -202,43 +248,17 @@ const OrderForm = () => {
           )}
         </div>
 
-        {showIngredients && (
-          <button
-            onClick={() => setExpandedItem(isExpanded ? null : item.name)}
-            className="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-muted-foreground hover:text-foreground border-t border-border transition"
-          >
-            {inCart.removedIngredients.length > 0
-              ? `Sin: ${inCart.removedIngredients.join(", ")}`
-              : "Personalizar ingredientes"}
-            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </button>
-        )}
-
-        {showIngredients && isExpanded && (
-          <div className="px-4 py-2 border-t border-border bg-muted/30 space-y-1.5">
-            <p className="text-xs text-muted-foreground font-medium mb-1">
-              Quitar ingredientes:
-            </p>
-            {INGREDIENTS.map((ing) => (
-              <label
-                key={ing}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <Checkbox
-                  checked={inCart.removedIngredients.includes(ing)}
-                  onCheckedChange={() => toggleIngredient(item.name, ing)}
-                />
-                <span className="text-sm text-foreground">{ing}</span>
-              </label>
-            ))}
-          </div>
+        {hasIngredients(item) && count > 0 && (
+          <p className="px-4 py-2 border-t border-border text-xs text-muted-foreground">
+            Personaliza ingredientes por unidad dentro del carrito
+          </p>
         )}
       </div>
     );
   };
 
   return (
-    <section id="pedir" className="py-16 bg-secondary">
+    <section id={ORDER_SECTION_ID} className="py-16 bg-secondary scroll-mt-24">
       <div className="container max-w-2xl">
         <h2 className="font-display text-3xl md:text-4xl text-center text-foreground mb-8">
           Haz tu pedido
@@ -323,20 +343,28 @@ const OrderForm = () => {
               <>
                 {/* Cart items */}
                 <div className="space-y-2 mb-6">
-                  {cart.map((c) => (
-                    <div key={c.item.name} className="bg-card rounded-lg px-4 py-3 border border-border">
+                  {cart.map((c, index) => {
+                    const duplicateIndex = cart
+                      .slice(0, index + 1)
+                      .filter((unit) => unit.item.name === c.item.name).length;
+                    const hasDuplicates = countByProductName(c.item.name) > 1;
+                    const isExpanded = expandedItemId === c.id;
+                    const canCustomize = hasIngredients(c.item);
+
+                    return (
+                    <div key={c.id} className="bg-card rounded-lg px-4 py-3 border border-border">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <p className="text-foreground text-sm font-medium">{c.qty}x {c.item.name}</p>
+                          <p className="text-foreground text-sm font-medium">{c.item.name}{hasDuplicates ? ` #${duplicateIndex}` : ""}</p>
                           {c.removedIngredients.length > 0 && (
                             <p className="text-xs text-muted-foreground mt-0.5">❌ Sin: {c.removedIngredients.join(", ")}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-primary font-bold text-sm">{(c.item.price * c.qty).toFixed(2)}€</span>
+                          <span className="text-primary font-bold text-sm">{c.item.price.toFixed(2)}€</span>
                           <div className="flex items-center gap-1">
-                            <button onClick={() => updateQty(c.item.name, -1)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground">
-                              {c.qty === 1 ? <Trash2 size={12} /> : <Minus size={12} />}
+                            <button onClick={() => removeById(c.id)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground hover:bg-destructive hover:text-accent-foreground transition">
+                              <Trash2 size={12} />
                             </button>
                             <button onClick={() => addToCart(c.item)} className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground">
                               <Plus size={12} />
@@ -344,8 +372,40 @@ const OrderForm = () => {
                           </div>
                         </div>
                       </div>
+
+                      {canCustomize && (
+                        <>
+                          <button
+                            onClick={() => setExpandedItemId(isExpanded ? null : c.id)}
+                            className="w-full flex items-center justify-center gap-1 py-1.5 mt-2 text-xs text-muted-foreground hover:text-foreground border-t border-border transition"
+                          >
+                            {c.removedIngredients.length > 0
+                              ? `Sin: ${c.removedIngredients.join(", ")}`
+                              : "Personalizar ingredientes"}
+                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          </button>
+
+                          {isExpanded && (
+                            <div className="pt-2 border-t border-border bg-muted/30 rounded-md px-3 py-2 mt-1 space-y-1.5">
+                              <p className="text-xs text-muted-foreground font-medium mb-1">
+                                Quitar ingredientes:
+                              </p>
+                              {INGREDIENTS.map((ing) => (
+                                <label key={`${c.id}-${ing}`} className="flex items-center gap-2 cursor-pointer">
+                                  <Checkbox
+                                    checked={c.removedIngredients.includes(ing)}
+                                    onCheckedChange={() => toggleIngredient(c.id, ing)}
+                                  />
+                                  <span className="text-sm text-foreground">{ing}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <div className="flex justify-between px-4 py-3 font-bold text-foreground">
                     <span>Total</span>
                     <span className="text-primary text-lg">{total.toFixed(2)}€</span>
@@ -375,9 +435,9 @@ const OrderForm = () => {
           <>
             {/* Cart review */}
             <div className="space-y-2 mb-6">
-              {cart.map((c) => (
+              {groupedForMessage.map((c, index) => (
                 <div
-                  key={c.item.name}
+                  key={`${c.item.name}-${index}-${c.removedIngredients.join("-")}`}
                   className="bg-card rounded-lg px-4 py-3 border border-border"
                 >
                   <div className="flex items-center justify-between">
@@ -395,24 +455,6 @@ const OrderForm = () => {
                       <span className="text-primary font-bold text-sm">
                         {(c.item.price * c.qty).toFixed(2)}€
                       </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => updateQty(c.item.name, -1)}
-                          className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground"
-                        >
-                          {c.qty === 1 ? (
-                            <Trash2 size={12} />
-                          ) : (
-                            <Minus size={12} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => addToCart(c.item)}
-                          className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
