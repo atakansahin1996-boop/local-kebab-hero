@@ -582,10 +582,10 @@ const OrderForm = () => {
             {/* Action buttons */}
             <div className="flex gap-3">
               <button
-                onClick={() => setStep("menu")}
+                onClick={() => setStep("carrito")}
                 className="px-5 py-3 rounded-lg bg-muted text-muted-foreground font-semibold text-sm hover:bg-border transition"
               >
-                ← Volver
+                ← Volver al carrito
               </button>
               <button
                 onClick={handleSend}
