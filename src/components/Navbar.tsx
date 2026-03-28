@@ -19,11 +19,11 @@ const Navbar = () => {
     e.preventDefault();
     setOpen(false);
     if (location.pathname === "/") {
-      document.getElementById("pedir")?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById("pedido-online")?.scrollIntoView({ behavior: "smooth" });
     } else {
-      navigate("/#pedir");
+      navigate("/#pedido-online");
       setTimeout(() => {
-        document.getElementById("pedir")?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById("pedido-online")?.scrollIntoView({ behavior: "smooth" });
       }, 300);
     }
   };
@@ -50,7 +50,7 @@ const Navbar = () => {
             </Link>
           ))}
           <a
-            href="#pedir"
+            href="#pedido-online"
             onClick={goToOrder}
             className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2 text-sm font-bold shadow-[var(--shadow-gold)] hover:brightness-110 transition"
           >
@@ -78,7 +78,7 @@ const Navbar = () => {
             </Link>
           ))}
           <a
-            href="#pedir"
+            href="#pedido-online"
             onClick={goToOrder}
             className="block text-center rounded-lg bg-primary text-primary-foreground px-5 py-3 text-sm font-bold"
           >
