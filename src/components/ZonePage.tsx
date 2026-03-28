@@ -1,4 +1,6 @@
 import heroImg from "@/assets/hero-kebab.jpg";
+import MenuSection from "@/components/MenuSection";
+import OrderForm from "@/components/OrderForm";
 
 interface ZonePageProps {
   zone: string;
@@ -29,13 +31,18 @@ const ZonePage = ({ zone, description }: ZonePageProps) => (
         </p>
         <a
           href="#pedir"
-          id="pedir"
           className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-8 py-4 text-lg font-bold shadow-[var(--shadow-gold)] animate-pulse-glow hover:brightness-110 transition"
         >
           PEDIR KEBAB EN {zone.toUpperCase()}
         </a>
       </div>
     </section>
+
+    {/* Carta */}
+    <MenuSection />
+
+    {/* Formulario de pedido */}
+    <OrderForm />
   </main>
 );
 

@@ -59,7 +59,7 @@ type CartItem = {
 const OrderForm = () => {
   const [activeCat, setActiveCat] = useState(0);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [step, setStep] = useState<"menu" | "datos">("menu");
+  const [step, setStep] = useState<"menu" | "datos" | "carrito">("menu");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -244,6 +244,26 @@ const OrderForm = () => {
           Haz tu pedido
         </h2>
 
+        {/* Tabs: Carta / Carrito */}
+        <div className="flex gap-2 mb-6">
+          {([
+            { key: "menu" as const, label: "🍽️ Carta" },
+            { key: "carrito" as const, label: `🛒 Carrito${cartCount > 0 ? ` (${cartCount})` : ""}` },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setStep(tab.key)}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                step === tab.key || (step === "datos" && tab.key === "carrito")
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-primary/20"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {step === "menu" ? (
           <>
             {/* Category tabs */}
@@ -275,15 +295,80 @@ const OrderForm = () => {
             {/* Cart summary bar */}
             {cart.length > 0 && (
               <button
-                onClick={() => setStep("datos")}
+                onClick={() => setStep("carrito")}
                 className="w-full flex items-center justify-between bg-primary text-primary-foreground rounded-lg px-5 py-4 font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition"
               >
                 <span className="flex items-center gap-2">
                   <ShoppingCart size={20} />
                   {cartCount} producto{cartCount > 1 ? "s" : ""}
                 </span>
-                <span>{total.toFixed(2)}€ — Continuar</span>
+                <span>{total.toFixed(2)}€ — Ver carrito</span>
               </button>
+            )}
+          </>
+        ) : step === "carrito" ? (
+          <>
+            {cart.length === 0 ? (
+              <div className="text-center py-12">
+                <ShoppingCart size={48} className="mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-sm">Tu carrito está vacío</p>
+                <button
+                  onClick={() => setStep("menu")}
+                  className="mt-4 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:brightness-110 transition"
+                >
+                  Ver carta
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Cart items */}
+                <div className="space-y-2 mb-6">
+                  {cart.map((c) => (
+                    <div key={c.item.name} className="bg-card rounded-lg px-4 py-3 border border-border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-foreground text-sm font-medium">{c.qty}x {c.item.name}</p>
+                          {c.removedIngredients.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-0.5">❌ Sin: {c.removedIngredients.join(", ")}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-primary font-bold text-sm">{(c.item.price * c.qty).toFixed(2)}€</span>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => updateQty(c.item.name, -1)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground">
+                              {c.qty === 1 ? <Trash2 size={12} /> : <Minus size={12} />}
+                            </button>
+                            <button onClick={() => addToCart(c.item)} className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground">
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex justify-between px-4 py-3 font-bold text-foreground">
+                    <span>Total</span>
+                    <span className="text-primary text-lg">{total.toFixed(2)}€</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <button onClick={() => setStep("menu")} className="px-5 py-3 rounded-lg bg-muted text-muted-foreground font-semibold text-sm hover:bg-border transition">
+                    ← Añadir más
+                  </button>
+                  <button
+                    onClick={() => setStep("datos")}
+                    disabled={method === "domicilio" && total < 15}
+                    className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Continuar con el pedido
+                  </button>
+                </div>
+                {total < 15 && method === "domicilio" && (
+                  <p className="text-accent text-xs text-center font-medium mt-2">⚠️ Pedido mínimo a domicilio: 15€ (faltan {(15 - total).toFixed(2)}€)</p>
+                )}
+              </>
             )}
           </>
         ) : (
@@ -497,10 +582,10 @@ const OrderForm = () => {
             {/* Action buttons */}
             <div className="flex gap-3">
               <button
-                onClick={() => setStep("menu")}
+                onClick={() => setStep("carrito")}
                 className="px-5 py-3 rounded-lg bg-muted text-muted-foreground font-semibold text-sm hover:bg-border transition"
               >
-                ← Volver
+                ← Volver al carrito
               </button>
               <button
                 onClick={handleSend}

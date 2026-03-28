@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.jpeg";
@@ -12,7 +12,21 @@ const navLinks = [
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  const goToOrder = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setOpen(false);
+    if (location.pathname === "/") {
+      document.getElementById("pedir")?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      navigate("/#pedir");
+      setTimeout(() => {
+        document.getElementById("pedir")?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
@@ -37,6 +51,7 @@ const Navbar = () => {
           ))}
           <a
             href="#pedir"
+            onClick={goToOrder}
             className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2 text-sm font-bold shadow-[var(--shadow-gold)] hover:brightness-110 transition"
           >
             PEDIR ONLINE
@@ -64,6 +79,7 @@ const Navbar = () => {
           ))}
           <a
             href="#pedir"
+            onClick={goToOrder}
             className="block text-center rounded-lg bg-primary text-primary-foreground px-5 py-3 text-sm font-bold"
           >
             PEDIR ONLINE
