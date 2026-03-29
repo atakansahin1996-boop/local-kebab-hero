@@ -215,7 +215,7 @@ const OrderForm = () => {
   const groupedForMessage = useMemo(() => {
     const grouped = new Map<
       string,
-      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; extras: string[]; unitPrice: number }
+      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; extras: string[]; drink: string; unitPrice: number }
     >();
 
     cart.forEach((cartItem) => {
@@ -368,6 +368,9 @@ const OrderForm = () => {
               {c.extras.map((extra) => (
                 <span key={extra} className="text-xs bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">+{extra}</span>
               ))}
+              {c.drink && (
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🥤 {c.drink}</span>
+              )}
             </div>
             {c.removedIngredients.length > 0 && (
               <p className="text-xs text-muted-foreground mt-0.5">❌ Sin: {c.removedIngredients.join(", ")}</p>
@@ -387,7 +390,7 @@ const OrderForm = () => {
         </div>
 
         {/* Expandable customization */}
-        {(canCustomize || canSelectMeat) && (
+        {(canCustomize || canSelectMeat || isMenu(c.item)) && (
           <>
             <button
               onClick={() => setExpandedItemId(isExpanded ? null : c.id)}
@@ -453,6 +456,22 @@ const OrderForm = () => {
                         <span className="text-sm text-foreground">{ing}</span>
                       </label>
                     ))}
+                  </div>
+                )}
+
+                {/* Drink selector for Menú */}
+                {isMenu(c.item) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1.5">🥤 Bebida del menú:</p>
+                    <select
+                      value={c.drink}
+                      onChange={(e) => setCart((prev) => prev.map((ci) => ci.id === c.id ? { ...ci, drink: e.target.value } : ci))}
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition"
+                    >
+                      {DRINKS.map((drink) => (
+                        <option key={drink} value={drink}>{drink}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>
@@ -569,7 +588,11 @@ const OrderForm = () => {
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                  <button onClick={() => setStep("menu")} className="px-5 py-3 rounded-lg bg-muted text-muted-foreground font-semibold text-sm hover:bg-border transition">
+                  <button onClick={() => setStep("menu")} className={`px-5 py-3 rounded-lg font-semibold text-sm transition ${
+                    method === "domicilio" && total < 15
+                      ? "bg-primary text-primary-foreground shadow-[var(--shadow-gold)] hover:brightness-110 animate-pulse-glow"
+                      : "bg-muted text-muted-foreground hover:bg-border"
+                  }`}>
                     ← Añadir más
                   </button>
                   <button
