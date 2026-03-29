@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type MenuItem = { name: string; price: number; category: string };
@@ -48,12 +48,23 @@ const BIZUM_NUMBER = "629 954 510";
 
 const INGREDIENTS = ["Lechuga", "Cebolla", "Tomate", "Salsa blanca", "Salsa roja"];
 const CATEGORIES_WITH_INGREDIENTS = ["Kebab", "Durum", "Plato", "Menú"];
+const MEAT_TYPES = ["Ternera", "Pollo", "Mixto"] as const;
+type MeatType = typeof MEAT_TYPES[number];
+
+const EXTRAS = [
+  { name: "Queso", price: 0.70 },
+  { name: "Extra de carne", price: 1.50 },
+] as const;
+
 const BILL_OPTIONS = [5, 10, 20, 50, 100];
+const CART_STORAGE_KEY = "almas-comilonas-cart";
 
 type CartItem = {
   id: string;
   item: MenuItem;
   removedIngredients: string[];
+  meatType: MeatType;
+  extras: string[];
 };
 
 const ORDER_SECTION_ID = "pedido-online";
@@ -61,9 +72,28 @@ const ORDER_SECTION_ID = "pedido-online";
 const createCartItemId = () =>
   `cart-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
+const hasMeatOption = (item: MenuItem) =>
+  CATEGORIES_WITH_INGREDIENTS.includes(item.category) &&
+  !item.name.toLowerCase().includes("falafel") &&
+  !item.name.toLowerCase().includes("vegetal");
+
+const loadCartFromStorage = (): CartItem[] => {
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return [];
+};
+
+const saveCartToStorage = (cart: CartItem[]) => {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch {}
+};
+
 const OrderForm = () => {
   const [activeCat, setActiveCat] = useState(0);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(loadCartFromStorage);
   const [step, setStep] = useState<"menu" | "datos" | "carrito">("menu");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -73,15 +103,31 @@ const OrderForm = () => {
   const [payment, setPayment] = useState<"efectivo" | "bizum">("efectivo");
   const [billAmount, setBillAmount] = useState<number | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [savedNotice, setSavedNotice] = useState(false);
+
+  // Auto-save cart to localStorage on change
+  useEffect(() => {
+    saveCartToStorage(cart);
+  }, [cart]);
 
   const hasIngredients = (item: MenuItem) =>
     CATEGORIES_WITH_INGREDIENTS.includes(item.category);
+
+  const getItemTotal = (c: CartItem) => {
+    const extrasTotal = c.extras.reduce((sum, extraName) => {
+      const extra = EXTRAS.find((e) => e.name === extraName);
+      return sum + (extra?.price ?? 0);
+    }, 0);
+    return c.item.price + extrasTotal;
+  };
 
   const addToCart = (item: MenuItem, goToCart = false) => {
     const newCartItem: CartItem = {
       id: createCartItemId(),
       item,
       removedIngredients: [],
+      meatType: "Ternera",
+      extras: [],
     };
 
     setCart((prev) => [...prev, newCartItem]);
@@ -101,9 +147,7 @@ const OrderForm = () => {
           break;
         }
       }
-
       if (indexToRemove === -1) return prev;
-
       return prev.filter((_, idx) => idx !== indexToRemove);
     });
   };
@@ -125,21 +169,46 @@ const OrderForm = () => {
     );
   };
 
+  const setMeatType = (itemId: string, meatType: MeatType) => {
+    setCart((prev) =>
+      prev.map((c) => (c.id === itemId ? { ...c, meatType } : c))
+    );
+  };
+
+  const toggleExtra = (itemId: string, extraName: string) => {
+    setCart((prev) =>
+      prev.map((c) => {
+        if (c.id !== itemId) return c;
+        const extras = c.extras.includes(extraName)
+          ? c.extras.filter((e) => e !== extraName)
+          : [...c.extras, extraName];
+        return { ...c, extras };
+      })
+    );
+  };
+
   const countByProductName = (itemName: string) =>
     cart.filter((c) => c.item.name === itemName).length;
 
-  const total = cart.reduce((sum, c) => sum + c.item.price, 0);
+  const total = cart.reduce((sum, c) => sum + getItemTotal(c), 0);
   const cartCount = cart.length;
+
+  const handleSaveCart = () => {
+    saveCartToStorage(cart);
+    setSavedNotice(true);
+    setTimeout(() => setSavedNotice(false), 2000);
+  };
 
   const groupedForMessage = useMemo(() => {
     const grouped = new Map<
       string,
-      { qty: number; item: MenuItem; removedIngredients: string[] }
+      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; extras: string[]; unitPrice: number }
     >();
 
     cart.forEach((cartItem) => {
       const ingredientsKey = [...cartItem.removedIngredients].sort().join("|");
-      const key = `${cartItem.item.name}|${ingredientsKey}`;
+      const extrasKey = [...cartItem.extras].sort().join("|");
+      const key = `${cartItem.item.name}|${cartItem.meatType}|${ingredientsKey}|${extrasKey}`;
       const existing = grouped.get(key);
 
       if (existing) {
@@ -149,6 +218,9 @@ const OrderForm = () => {
           qty: 1,
           item: cartItem.item,
           removedIngredients: cartItem.removedIngredients,
+          meatType: cartItem.meatType,
+          extras: cartItem.extras,
+          unitPrice: getItemTotal(cartItem),
         });
       }
     });
@@ -159,7 +231,10 @@ const OrderForm = () => {
   const buildWhatsAppMessage = () => {
     const items = groupedForMessage
       .map((c) => {
-        let line = `• ${c.qty}x ${c.item.name} — ${(c.item.price * c.qty).toFixed(2)}€`;
+        let line = `• ${c.qty}x ${c.item.name}`;
+        if (hasMeatOption(c.item)) line += ` (${c.meatType})`;
+        if (c.extras.length > 0) line += ` + ${c.extras.join(", ")}`;
+        line += ` — ${(c.unitPrice * c.qty).toFixed(2)}€`;
         if (c.removedIngredients.length > 0) {
           line += `\n   ❌ Sin: ${c.removedIngredients.join(", ")}`;
         }
@@ -197,6 +272,9 @@ const OrderForm = () => {
     if (payment === "efectivo" && (!billAmount || (billAmount > 0 && billAmount < total))) return;
     const msg = encodeURIComponent(buildWhatsAppMessage());
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+    // Clear cart after sending
+    setCart([]);
+    localStorage.removeItem(CART_STORAGE_KEY);
   };
 
   const isFormValid =
@@ -247,11 +325,124 @@ const OrderForm = () => {
             </button>
           )}
         </div>
+      </div>
+    );
+  };
 
-        {hasIngredients(item) && count > 0 && (
-          <p className="px-4 py-2 border-t border-border text-xs text-muted-foreground">
-            Personaliza ingredientes por unidad dentro del carrito
-          </p>
+  const CartItemCard = ({ c, index }: { c: CartItem; index: number }) => {
+    const duplicateIndex = cart
+      .slice(0, index + 1)
+      .filter((unit) => unit.item.name === c.item.name).length;
+    const hasDuplicates = countByProductName(c.item.name) > 1;
+    const isExpanded = expandedItemId === c.id;
+    const canCustomize = hasIngredients(c.item);
+    const canSelectMeat = hasMeatOption(c.item);
+    const itemTotal = getItemTotal(c);
+
+    return (
+      <div className="bg-card rounded-lg px-4 py-3 border border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground text-sm font-medium">
+              {c.item.name}{hasDuplicates ? ` #${duplicateIndex}` : ""}
+            </p>
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {canSelectMeat && (
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🥩 {c.meatType}</span>
+              )}
+              {c.extras.map((extra) => (
+                <span key={extra} className="text-xs bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">+{extra}</span>
+              ))}
+            </div>
+            {c.removedIngredients.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-0.5">❌ Sin: {c.removedIngredients.join(", ")}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-primary font-bold text-sm">{itemTotal.toFixed(2)}€</span>
+            <div className="flex items-center gap-1">
+              <button onClick={() => removeById(c.id)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground hover:bg-destructive hover:text-accent-foreground transition">
+                <Trash2 size={12} />
+              </button>
+              <button onClick={() => addToCart(c.item)} className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground">
+                <Plus size={12} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Expandable customization */}
+        {(canCustomize || canSelectMeat) && (
+          <>
+            <button
+              onClick={() => setExpandedItemId(isExpanded ? null : c.id)}
+              className="w-full flex items-center justify-center gap-1 py-1.5 mt-2 text-xs text-muted-foreground hover:text-foreground border-t border-border transition"
+            >
+              Personalizar
+              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+
+            {isExpanded && (
+              <div className="pt-2 border-t border-border bg-muted/30 rounded-md px-3 py-2 mt-1 space-y-3">
+                {/* Meat type selector */}
+                {canSelectMeat && (
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1.5">🥩 Tipo de carne:</p>
+                    <div className="flex gap-2">
+                      {MEAT_TYPES.map((meat) => (
+                        <button
+                          key={meat}
+                          onClick={() => setMeatType(c.id, meat)}
+                          className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                            c.meatType === meat
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-primary/20"
+                          }`}
+                        >
+                          {meat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Extras (cross-sell) */}
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium mb-1.5">➕ Extras:</p>
+                  <div className="space-y-1.5">
+                    {EXTRAS.map((extra) => (
+                      <label key={`${c.id}-extra-${extra.name}`} className="flex items-center justify-between gap-2 cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={c.extras.includes(extra.name)}
+                            onCheckedChange={() => toggleExtra(c.id, extra.name)}
+                          />
+                          <span className="text-sm text-foreground">{extra.name}</span>
+                        </div>
+                        <span className="text-xs text-primary font-semibold">+{extra.price.toFixed(2)}€</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Remove ingredients */}
+                {canCustomize && (
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Quitar ingredientes:</p>
+                    {INGREDIENTS.map((ing) => (
+                      <label key={`${c.id}-${ing}`} className="flex items-center gap-2 cursor-pointer mb-1.5">
+                        <Checkbox
+                          checked={c.removedIngredients.includes(ing)}
+                          onCheckedChange={() => toggleIngredient(c.id, ing)}
+                        />
+                        <span className="text-sm text-foreground">{ing}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -342,75 +533,24 @@ const OrderForm = () => {
             ) : (
               <>
                 {/* Cart items */}
-                <div className="space-y-2 mb-6">
-                  {cart.map((c, index) => {
-                    const duplicateIndex = cart
-                      .slice(0, index + 1)
-                      .filter((unit) => unit.item.name === c.item.name).length;
-                    const hasDuplicates = countByProductName(c.item.name) > 1;
-                    const isExpanded = expandedItemId === c.id;
-                    const canCustomize = hasIngredients(c.item);
-
-                    return (
-                    <div key={c.id} className="bg-card rounded-lg px-4 py-3 border border-border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-foreground text-sm font-medium">{c.item.name}{hasDuplicates ? ` #${duplicateIndex}` : ""}</p>
-                          {c.removedIngredients.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-0.5">❌ Sin: {c.removedIngredients.join(", ")}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-primary font-bold text-sm">{c.item.price.toFixed(2)}€</span>
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => removeById(c.id)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground hover:bg-destructive hover:text-accent-foreground transition">
-                              <Trash2 size={12} />
-                            </button>
-                            <button onClick={() => addToCart(c.item)} className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground">
-                              <Plus size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {canCustomize && (
-                        <>
-                          <button
-                            onClick={() => setExpandedItemId(isExpanded ? null : c.id)}
-                            className="w-full flex items-center justify-center gap-1 py-1.5 mt-2 text-xs text-muted-foreground hover:text-foreground border-t border-border transition"
-                          >
-                            {c.removedIngredients.length > 0
-                              ? `Sin: ${c.removedIngredients.join(", ")}`
-                              : "Personalizar ingredientes"}
-                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                          </button>
-
-                          {isExpanded && (
-                            <div className="pt-2 border-t border-border bg-muted/30 rounded-md px-3 py-2 mt-1 space-y-1.5">
-                              <p className="text-xs text-muted-foreground font-medium mb-1">
-                                Quitar ingredientes:
-                              </p>
-                              {INGREDIENTS.map((ing) => (
-                                <label key={`${c.id}-${ing}`} className="flex items-center gap-2 cursor-pointer">
-                                  <Checkbox
-                                    checked={c.removedIngredients.includes(ing)}
-                                    onCheckedChange={() => toggleIngredient(c.id, ing)}
-                                  />
-                                  <span className="text-sm text-foreground">{ing}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    );
-                  })}
+                <div className="space-y-2 mb-4">
+                  {cart.map((c, index) => (
+                    <CartItemCard key={c.id} c={c} index={index} />
+                  ))}
                   <div className="flex justify-between px-4 py-3 font-bold text-foreground">
                     <span>Total</span>
                     <span className="text-primary text-lg">{total.toFixed(2)}€</span>
                   </div>
                 </div>
+
+                {/* Save cart button */}
+                <button
+                  onClick={handleSaveCart}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 mb-4 rounded-lg bg-muted text-muted-foreground text-sm font-semibold hover:bg-border transition"
+                >
+                  <Save size={16} />
+                  {savedNotice ? "✅ Carrito guardado" : "Guardar carrito para después"}
+                </button>
 
                 {/* Actions */}
                 <div className="flex gap-3">
@@ -437,14 +577,20 @@ const OrderForm = () => {
             <div className="space-y-2 mb-6">
               {groupedForMessage.map((c, index) => (
                 <div
-                  key={`${c.item.name}-${index}-${c.removedIngredients.join("-")}`}
+                  key={`${c.item.name}-${index}-${c.meatType}-${c.removedIngredients.join("-")}-${c.extras.join("-")}`}
                   className="bg-card rounded-lg px-4 py-3 border border-border"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="text-foreground text-sm font-medium">
                         {c.qty}x {c.item.name}
+                        {hasMeatOption(c.item) && ` (${c.meatType})`}
                       </p>
+                      {c.extras.length > 0 && (
+                        <p className="text-xs text-accent-foreground mt-0.5">
+                          + {c.extras.join(", ")}
+                        </p>
+                      )}
                       {c.removedIngredients.length > 0 && (
                         <p className="text-xs text-muted-foreground mt-0.5">
                           ❌ Sin: {c.removedIngredients.join(", ")}
@@ -453,7 +599,7 @@ const OrderForm = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-primary font-bold text-sm">
-                        {(c.item.price * c.qty).toFixed(2)}€
+                        {(c.unitPrice * c.qty).toFixed(2)}€
                       </span>
                     </div>
                   </div>
