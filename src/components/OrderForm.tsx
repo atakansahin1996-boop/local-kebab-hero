@@ -629,6 +629,11 @@ const OrderForm = () => {
                           + {c.extras.join(", ")}
                         </p>
                       )}
+                      {c.drink && (
+                        <p className="text-xs text-primary mt-0.5">
+                          🥤 {c.drink}
+                        </p>
+                      )}
                       {c.removedIngredients.length > 0 && (
                         <p className="text-xs text-muted-foreground mt-0.5">
                           ❌ Sin: {c.removedIngredients.join(", ")}
