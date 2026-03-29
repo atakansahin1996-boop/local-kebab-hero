@@ -56,6 +56,15 @@ const EXTRAS = [
   { name: "Extra de carne", price: 1.50 },
 ] as const;
 
+const DRINKS = [
+  "Coca Cola", "Coca Cola Zero", "Coca Cola Zero Zero",
+  "Fanta Naranja", "Fanta Limón",
+  "Aquarius Naranja", "Aquarius Limón",
+  "Trina Naranja", "Trina Limón",
+  "Sprite", "Nestea Limón", "Nestea Maracuyá", "Nestea Frutos Rojos",
+  "Cerveza", "Agua", "Tónica",
+] as const;
+
 const BILL_OPTIONS = [5, 10, 20, 50, 100];
 const CART_STORAGE_KEY = "almas-comilonas-cart";
 
@@ -65,6 +74,7 @@ type CartItem = {
   removedIngredients: string[];
   meatType: MeatType;
   extras: string[];
+  drink: string;
 };
 
 const ORDER_SECTION_ID = "pedido-online";
@@ -121,6 +131,8 @@ const OrderForm = () => {
     return c.item.price + extrasTotal;
   };
 
+  const isMenu = (item: MenuItem) => item.category === "Menú";
+
   const addToCart = (item: MenuItem, goToCart = false) => {
     const newCartItem: CartItem = {
       id: createCartItemId(),
@@ -128,6 +140,7 @@ const OrderForm = () => {
       removedIngredients: [],
       meatType: "Ternera",
       extras: [],
+      drink: isMenu(item) ? "Coca Cola" : "",
     };
 
     setCart((prev) => [...prev, newCartItem]);
@@ -202,13 +215,13 @@ const OrderForm = () => {
   const groupedForMessage = useMemo(() => {
     const grouped = new Map<
       string,
-      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; extras: string[]; unitPrice: number }
+      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; extras: string[]; drink: string; unitPrice: number }
     >();
 
     cart.forEach((cartItem) => {
       const ingredientsKey = [...cartItem.removedIngredients].sort().join("|");
       const extrasKey = [...cartItem.extras].sort().join("|");
-      const key = `${cartItem.item.name}|${cartItem.meatType}|${ingredientsKey}|${extrasKey}`;
+      const key = `${cartItem.item.name}|${cartItem.meatType}|${ingredientsKey}|${extrasKey}|${cartItem.drink}`;
       const existing = grouped.get(key);
 
       if (existing) {
@@ -220,6 +233,7 @@ const OrderForm = () => {
           removedIngredients: cartItem.removedIngredients,
           meatType: cartItem.meatType,
           extras: cartItem.extras,
+          drink: cartItem.drink,
           unitPrice: getItemTotal(cartItem),
         });
       }
@@ -234,6 +248,7 @@ const OrderForm = () => {
         let line = `• ${c.qty}x ${c.item.name}`;
         if (hasMeatOption(c.item)) line += ` (${c.meatType})`;
         if (c.extras.length > 0) line += ` + ${c.extras.join(", ")}`;
+        if (c.drink) line += ` 🥤 ${c.drink}`;
         line += ` — ${(c.unitPrice * c.qty).toFixed(2)}€`;
         if (c.removedIngredients.length > 0) {
           line += `\n   ❌ Sin: ${c.removedIngredients.join(", ")}`;
@@ -353,6 +368,9 @@ const OrderForm = () => {
               {c.extras.map((extra) => (
                 <span key={extra} className="text-xs bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">+{extra}</span>
               ))}
+              {c.drink && (
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🥤 {c.drink}</span>
+              )}
             </div>
             {c.removedIngredients.length > 0 && (
               <p className="text-xs text-muted-foreground mt-0.5">❌ Sin: {c.removedIngredients.join(", ")}</p>
@@ -372,7 +390,7 @@ const OrderForm = () => {
         </div>
 
         {/* Expandable customization */}
-        {(canCustomize || canSelectMeat) && (
+        {(canCustomize || canSelectMeat || isMenu(c.item)) && (
           <>
             <button
               onClick={() => setExpandedItemId(isExpanded ? null : c.id)}
@@ -438,6 +456,22 @@ const OrderForm = () => {
                         <span className="text-sm text-foreground">{ing}</span>
                       </label>
                     ))}
+                  </div>
+                )}
+
+                {/* Drink selector for Menú */}
+                {isMenu(c.item) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1.5">🥤 Bebida del menú:</p>
+                    <select
+                      value={c.drink}
+                      onChange={(e) => setCart((prev) => prev.map((ci) => ci.id === c.id ? { ...ci, drink: e.target.value } : ci))}
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition"
+                    >
+                      {DRINKS.map((drink) => (
+                        <option key={drink} value={drink}>{drink}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>
@@ -554,7 +588,11 @@ const OrderForm = () => {
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                  <button onClick={() => setStep("menu")} className="px-5 py-3 rounded-lg bg-muted text-muted-foreground font-semibold text-sm hover:bg-border transition">
+                  <button onClick={() => setStep("menu")} className={`px-5 py-3 rounded-lg font-semibold text-sm transition ${
+                    method === "domicilio" && total < 15
+                      ? "bg-primary text-primary-foreground shadow-[var(--shadow-gold)] hover:brightness-110 animate-pulse-glow"
+                      : "bg-muted text-muted-foreground hover:bg-border"
+                  }`}>
                     ← Añadir más
                   </button>
                   <button
@@ -589,6 +627,11 @@ const OrderForm = () => {
                       {c.extras.length > 0 && (
                         <p className="text-xs text-accent-foreground mt-0.5">
                           + {c.extras.join(", ")}
+                        </p>
+                      )}
+                      {c.drink && (
+                        <p className="text-xs text-primary mt-0.5">
+                          🥤 {c.drink}
                         </p>
                       )}
                       {c.removedIngredients.length > 0 && (
