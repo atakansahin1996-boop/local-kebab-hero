@@ -56,6 +56,15 @@ const EXTRAS = [
   { name: "Extra de carne", price: 1.50 },
 ] as const;
 
+const DRINKS = [
+  "Coca Cola", "Coca Cola Zero", "Coca Cola Zero Zero",
+  "Fanta Naranja", "Fanta Limón",
+  "Aquarius Naranja", "Aquarius Limón",
+  "Trina Naranja", "Trina Limón",
+  "Sprite", "Nestea Limón", "Nestea Maracuyá", "Nestea Frutos Rojos",
+  "Cerveza", "Agua", "Tónica",
+] as const;
+
 const BILL_OPTIONS = [5, 10, 20, 50, 100];
 const CART_STORAGE_KEY = "almas-comilonas-cart";
 
@@ -65,6 +74,7 @@ type CartItem = {
   removedIngredients: string[];
   meatType: MeatType;
   extras: string[];
+  drink: string;
 };
 
 const ORDER_SECTION_ID = "pedido-online";
@@ -121,6 +131,8 @@ const OrderForm = () => {
     return c.item.price + extrasTotal;
   };
 
+  const isMenu = (item: MenuItem) => item.category === "Menú";
+
   const addToCart = (item: MenuItem, goToCart = false) => {
     const newCartItem: CartItem = {
       id: createCartItemId(),
@@ -128,6 +140,7 @@ const OrderForm = () => {
       removedIngredients: [],
       meatType: "Ternera",
       extras: [],
+      drink: isMenu(item) ? "Coca Cola" : "",
     };
 
     setCart((prev) => [...prev, newCartItem]);
@@ -208,7 +221,7 @@ const OrderForm = () => {
     cart.forEach((cartItem) => {
       const ingredientsKey = [...cartItem.removedIngredients].sort().join("|");
       const extrasKey = [...cartItem.extras].sort().join("|");
-      const key = `${cartItem.item.name}|${cartItem.meatType}|${ingredientsKey}|${extrasKey}`;
+      const key = `${cartItem.item.name}|${cartItem.meatType}|${ingredientsKey}|${extrasKey}|${cartItem.drink}`;
       const existing = grouped.get(key);
 
       if (existing) {
@@ -220,6 +233,7 @@ const OrderForm = () => {
           removedIngredients: cartItem.removedIngredients,
           meatType: cartItem.meatType,
           extras: cartItem.extras,
+          drink: cartItem.drink,
           unitPrice: getItemTotal(cartItem),
         });
       }
@@ -234,6 +248,7 @@ const OrderForm = () => {
         let line = `• ${c.qty}x ${c.item.name}`;
         if (hasMeatOption(c.item)) line += ` (${c.meatType})`;
         if (c.extras.length > 0) line += ` + ${c.extras.join(", ")}`;
+        if (c.drink) line += ` 🥤 ${c.drink}`;
         line += ` — ${(c.unitPrice * c.qty).toFixed(2)}€`;
         if (c.removedIngredients.length > 0) {
           line += `\n   ❌ Sin: ${c.removedIngredients.join(", ")}`;
