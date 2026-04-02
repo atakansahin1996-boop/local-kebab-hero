@@ -11,6 +11,7 @@ import KebabMoratalaz from "./pages/KebabMoratalaz";
 import KebabValdebernardo from "./pages/KebabValdebernardo";
 import KebabVicalvaro from "./pages/KebabVicalvaro";
 import NotFound from "./pages/NotFound";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
 
