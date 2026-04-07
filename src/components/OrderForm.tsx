@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp, Save, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type MenuItem = { name: string; price: number; category: string };
@@ -45,6 +45,25 @@ const MENU: MenuItem[] = [
 const CATEGORIES = [...new Set(MENU.map((m) => m.category))];
 const WHATSAPP_NUMBER = "34697878655";
 const BIZUM_NUMBER = "629 954 510";
+
+// Restaurant epicenter coordinates (Av. Doctor García Tapia 159, Madrid)
+const RESTAURANT_LAT = 40.4074228;
+const RESTAURANT_LNG = -3.6293111;
+const MAX_DELIVERY_RADIUS_KM = 2.5;
+
+/** Haversine distance in km between two lat/lng points */
+const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+type AddressStatus = "idle" | "checking" | "ok" | "too_far" | "not_found";
 
 const INGREDIENTS = ["Lechuga", "Cebolla", "Tomate", "Salsa blanca", "Salsa roja"];
 const CATEGORIES_WITH_INGREDIENTS = ["Kebab", "Durum", "Plato", "Menú"];
@@ -114,6 +133,43 @@ const OrderForm = () => {
   const [billAmount, setBillAmount] = useState<number | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
+  const [addressDistance, setAddressDistance] = useState<number | null>(null);
+
+  // Debounced address geocoding & distance check
+  useEffect(() => {
+    if (method !== "domicilio" || !address.trim() || address.trim().length < 5) {
+      setAddressStatus("idle");
+      setAddressDistance(null);
+      return;
+    }
+
+    setAddressStatus("checking");
+    const timeout = setTimeout(async () => {
+      try {
+        const query = encodeURIComponent(`${address.trim()}, Madrid, Spain`);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=es`
+        );
+        const data = await res.json();
+        if (!data || data.length === 0) {
+          setAddressStatus("not_found");
+          setAddressDistance(null);
+          return;
+        }
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        const dist = haversineDistance(RESTAURANT_LAT, RESTAURANT_LNG, lat, lon);
+        setAddressDistance(Math.round(dist * 10) / 10);
+        setAddressStatus(dist <= MAX_DELIVERY_RADIUS_KM ? "ok" : "too_far");
+      } catch {
+        setAddressStatus("not_found");
+        setAddressDistance(null);
+      }
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [address, method]);
 
   // Auto-save cart to localStorage on change
   useEffect(() => {
@@ -296,7 +352,7 @@ const OrderForm = () => {
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
-    (method === "recoger" || address.trim()) &&
+    (method === "recoger" || (address.trim() && addressStatus === "ok")) &&
     (payment === "bizum" || (billAmount && (billAmount === -1 || billAmount >= total)));
 
   const ProductCard = ({ item }: { item: MenuItem }) => {
@@ -785,19 +841,51 @@ const OrderForm = () => {
                 />
               </div>
               {method === "domicilio" && (
-                <div className="relative">
-                  <MapPin
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Dirección de entrega"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    maxLength={200}
-                    className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition"
-                  />
+                <div>
+                  <div className="relative">
+                    <MapPin
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Dirección de entrega (calle y número)"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      maxLength={200}
+                      className={`w-full bg-card border rounded-lg pl-10 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none transition ${
+                        addressStatus === "ok"
+                          ? "border-green-500 focus:border-green-500"
+                          : addressStatus === "too_far" || addressStatus === "not_found"
+                          ? "border-destructive focus:border-destructive"
+                          : "border-border focus:border-primary"
+                      }`}
+                    />
+                    {addressStatus === "checking" && (
+                      <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />
+                    )}
+                    {addressStatus === "ok" && (
+                      <CheckCircle size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+                    )}
+                    {(addressStatus === "too_far" || addressStatus === "not_found") && (
+                      <AlertTriangle size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-destructive" />
+                    )}
+                  </div>
+                  {addressStatus === "ok" && addressDistance !== null && (
+                    <p className="text-green-500 text-xs mt-1 ml-1">
+                      ✅ Dirección dentro de la zona de reparto ({addressDistance} km)
+                    </p>
+                  )}
+                  {addressStatus === "too_far" && addressDistance !== null && (
+                    <p className="text-destructive text-xs mt-1 ml-1">
+                      ❌ Fuera de la zona de reparto (máx. {MAX_DELIVERY_RADIUS_KM} km). Tu dirección está a {addressDistance} km.
+                    </p>
+                  )}
+                  {addressStatus === "not_found" && (
+                    <p className="text-destructive text-xs mt-1 ml-1">
+                      ⚠️ No se ha encontrado la dirección. Incluye calle y número.
+                    </p>
+                  )}
                 </div>
               )}
               <textarea
