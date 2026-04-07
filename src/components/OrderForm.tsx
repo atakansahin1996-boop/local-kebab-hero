@@ -49,7 +49,7 @@ const BIZUM_NUMBER = "629 954 510";
 // Restaurant epicenter coordinates (Av. Doctor García Tapia 159, Madrid)
 const RESTAURANT_LAT = 40.4074228;
 const RESTAURANT_LNG = -3.6293111;
-const MAX_DELIVERY_RADIUS_KM = 2.5;
+const MAX_DELIVERY_RADIUS_KM = 3;
 
 /** Haversine distance in km between two lat/lng points */
 const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
