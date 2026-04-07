@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp, Save, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type MenuItem = { name: string; price: number; category: string };
