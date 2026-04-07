@@ -133,6 +133,43 @@ const OrderForm = () => {
   const [billAmount, setBillAmount] = useState<number | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
+  const [addressDistance, setAddressDistance] = useState<number | null>(null);
+
+  // Debounced address geocoding & distance check
+  useEffect(() => {
+    if (method !== "domicilio" || !address.trim() || address.trim().length < 5) {
+      setAddressStatus("idle");
+      setAddressDistance(null);
+      return;
+    }
+
+    setAddressStatus("checking");
+    const timeout = setTimeout(async () => {
+      try {
+        const query = encodeURIComponent(`${address.trim()}, Madrid, Spain`);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=es`
+        );
+        const data = await res.json();
+        if (!data || data.length === 0) {
+          setAddressStatus("not_found");
+          setAddressDistance(null);
+          return;
+        }
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        const dist = haversineDistance(RESTAURANT_LAT, RESTAURANT_LNG, lat, lon);
+        setAddressDistance(Math.round(dist * 10) / 10);
+        setAddressStatus(dist <= MAX_DELIVERY_RADIUS_KM ? "ok" : "too_far");
+      } catch {
+        setAddressStatus("not_found");
+        setAddressDistance(null);
+      }
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [address, method]);
 
   // Auto-save cart to localStorage on change
   useEffect(() => {
