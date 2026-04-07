@@ -876,9 +876,9 @@ const OrderForm = () => {
                       ✅ Dirección dentro de la zona de reparto ({addressDistance} km)
                     </p>
                   )}
-                  {addressStatus === "too_far" && addressDistance !== null && (
+                  {addressStatus === "too_far" && (
                     <p className="text-destructive text-xs mt-1 ml-1">
-                      ❌ Fuera de la zona de reparto (máx. {MAX_DELIVERY_RADIUS_KM} km). Tu dirección está a {addressDistance} km.
+                      ❌ De momento no llegamos hasta tu casa, esperamos poder hacerlo pronto..
                     </p>
                   )}
                   {addressStatus === "not_found" && (
