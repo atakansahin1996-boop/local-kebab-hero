@@ -873,7 +873,7 @@ const OrderForm = () => {
                   </div>
                   {addressStatus === "ok" && addressDistance !== null && (
                     <p className="text-green-500 text-xs mt-1 ml-1">
-                      ✅ Llegamos hasta tu casa ({addressDistance} km)
+                      ✅ Llegamos hasta tu casa
                     </p>
                   )}
                   {addressStatus === "too_far" && (
