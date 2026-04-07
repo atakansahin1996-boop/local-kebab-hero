@@ -352,7 +352,7 @@ const OrderForm = () => {
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
-    (method === "recoger" || address.trim()) &&
+    (method === "recoger" || (address.trim() && addressStatus === "ok")) &&
     (payment === "bizum" || (billAmount && (billAmount === -1 || billAmount >= total)));
 
   const ProductCard = ({ item }: { item: MenuItem }) => {
