@@ -46,6 +46,25 @@ const CATEGORIES = [...new Set(MENU.map((m) => m.category))];
 const WHATSAPP_NUMBER = "34697878655";
 const BIZUM_NUMBER = "629 954 510";
 
+// Restaurant epicenter coordinates (Av. Doctor García Tapia 159, Madrid)
+const RESTAURANT_LAT = 40.4074228;
+const RESTAURANT_LNG = -3.6293111;
+const MAX_DELIVERY_RADIUS_KM = 2.5;
+
+/** Haversine distance in km between two lat/lng points */
+const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+type AddressStatus = "idle" | "checking" | "ok" | "too_far" | "not_found";
+
 const INGREDIENTS = ["Lechuga", "Cebolla", "Tomate", "Salsa blanca", "Salsa roja"];
 const CATEGORIES_WITH_INGREDIENTS = ["Kebab", "Durum", "Plato", "Menú"];
 const MEAT_TYPES = ["Ternera", "Pollo", "Mixto"] as const;
