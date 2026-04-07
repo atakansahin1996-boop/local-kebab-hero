@@ -841,19 +841,51 @@ const OrderForm = () => {
                 />
               </div>
               {method === "domicilio" && (
-                <div className="relative">
-                  <MapPin
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Dirección de entrega"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    maxLength={200}
-                    className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition"
-                  />
+                <div>
+                  <div className="relative">
+                    <MapPin
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Dirección de entrega (calle y número)"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      maxLength={200}
+                      className={`w-full bg-card border rounded-lg pl-10 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none transition ${
+                        addressStatus === "ok"
+                          ? "border-green-500 focus:border-green-500"
+                          : addressStatus === "too_far" || addressStatus === "not_found"
+                          ? "border-destructive focus:border-destructive"
+                          : "border-border focus:border-primary"
+                      }`}
+                    />
+                    {addressStatus === "checking" && (
+                      <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />
+                    )}
+                    {addressStatus === "ok" && (
+                      <CheckCircle size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+                    )}
+                    {(addressStatus === "too_far" || addressStatus === "not_found") && (
+                      <AlertTriangle size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-destructive" />
+                    )}
+                  </div>
+                  {addressStatus === "ok" && addressDistance !== null && (
+                    <p className="text-green-500 text-xs mt-1 ml-1">
+                      ✅ Dirección dentro de la zona de reparto ({addressDistance} km)
+                    </p>
+                  )}
+                  {addressStatus === "too_far" && addressDistance !== null && (
+                    <p className="text-destructive text-xs mt-1 ml-1">
+                      ❌ Fuera de la zona de reparto (máx. {MAX_DELIVERY_RADIUS_KM} km). Tu dirección está a {addressDistance} km.
+                    </p>
+                  )}
+                  {addressStatus === "not_found" && (
+                    <p className="text-destructive text-xs mt-1 ml-1">
+                      ⚠️ No se ha encontrado la dirección. Incluye calle y número.
+                    </p>
+                  )}
                 </div>
               )}
               <textarea
