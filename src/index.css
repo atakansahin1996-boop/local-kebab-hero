@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -36,7 +36,7 @@
 
     --radius: 0.75rem;
 
-    --font-display: 'Playfair Display', serif;
+    --font-display: 'Inter', sans-serif;
     --font-body: 'DM Sans', sans-serif;
 
     --gradient-gold: linear-gradient(135deg, hsl(38 92% 50%), hsl(28 90% 45%));
@@ -57,5 +57,8 @@
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: -0.03em;
   }
 }
