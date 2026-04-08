@@ -30,7 +30,7 @@ const ZonePage = ({ zone, description }: ZonePageProps) => (
           {description}
         </p>
         <a
-          href="/#pedido-online"
+          href="#pedido-online"
           className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-8 py-4 text-lg font-bold shadow-[var(--shadow-gold)] animate-pulse-glow hover:brightness-110 transition"
         >
           PEDIR KEBAB EN {zone.toUpperCase()}
