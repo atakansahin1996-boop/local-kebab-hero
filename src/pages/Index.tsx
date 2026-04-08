@@ -21,11 +21,11 @@ const Index = () => (
         className="absolute inset-0"
         style={{ background: "var(--gradient-hero-overlay)" }}
       />
-      <div className="relative z-10 text-center px-4 max-w-3xl animate-fade-in-up">
-        <h1 className="font-display text-4xl md:text-6xl text-foreground mb-6 leading-tight">
+      <div className="relative z-10 text-justify px-4 max-w-3xl animate-fade-in-up">
+        <h1 className="font-display text-4xl md:text-6xl text-foreground mb-6 leading-tight text-justify">
           Kebab a domicilio en Moratalaz, Valdebernardo y Vicálvaro
         </h1>
-        <p className="text-foreground/80 text-lg md:text-xl mb-8 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-foreground/80 text-lg md:text-xl mb-8 leading-relaxed max-w-2xl mx-auto text-justify">
           Disfruta de nuestros durums, platos kebab, pizzas turcas y menús completos con reparto
           rápido. Preparamos cada pedido al momento con ingredientes frescos y la mejor carne kebab.
         </p>
