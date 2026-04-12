@@ -31,7 +31,7 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
       <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-2 font-display text-xl text-primary tracking-wide">
+        <Link to="/" className="flex items-center gap-2 font-display text-xl text-primary font-bold tracking-[-0.03em]">
           <img src={logo} alt="Almas Comilonas logo" className="w-9 h-9 rounded-full object-cover" />
           Almas Comilonas
         </Link>
