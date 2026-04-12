@@ -122,6 +122,7 @@ const saveCartToStorage = (cart: CartItem[]) => {
 };
 
 const OrderForm = () => {
+  const { data: availability } = useProductAvailability();
   const [activeCat, setActiveCat] = useState(0);
   const [cart, setCart] = useState<CartItem[]>(loadCartFromStorage);
   const [step, setStep] = useState<"menu" | "datos" | "carrito">("menu");
@@ -358,6 +359,24 @@ const OrderForm = () => {
 
   const ProductCard = ({ item }: { item: MenuItem }) => {
     const count = countByProductName(item.name);
+    const available = isProductAvailable(availability, item.name);
+
+    if (!available) {
+      return (
+        <div className="bg-card rounded-lg border border-border overflow-hidden opacity-50">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-muted-foreground text-sm font-medium truncate line-through">
+                {item.name}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                No disponible
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="bg-card rounded-lg border border-border overflow-hidden">
