@@ -111,7 +111,6 @@ const Admin = () => {
   // Group products by category
   const categories = new Map<string, Product[]>();
   products.forEach((p) => {
-    const parts = p.product_name.split(" ");
     let cat = "Otros";
     if (p.product_name.startsWith("Kebab")) cat = "Kebab";
     else if (p.product_name.startsWith("Durum")) cat = "Durum";
