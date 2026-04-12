@@ -14,7 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      product_availability: {
+        Row: {
+          available: boolean
+          id: string
+          product_name: string
+          updated_at: string
+        }
+        Insert: {
+          available?: boolean
+          id?: string
+          product_name: string
+          updated_at?: string
+        }
+        Update: {
+          available?: boolean
+          id?: string
+          product_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
