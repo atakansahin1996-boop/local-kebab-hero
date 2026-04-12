@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp, Save, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useProductAvailability, isProductAvailable } from "@/hooks/useProductAvailability";
 
 type MenuItem = { name: string; price: number; category: string };
 
