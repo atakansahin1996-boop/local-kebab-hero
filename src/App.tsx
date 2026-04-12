@@ -11,6 +11,7 @@ import KebabMoratalaz from "./pages/KebabMoratalaz";
 import KebabValdebernardo from "./pages/KebabValdebernardo";
 import KebabVicalvaro from "./pages/KebabVicalvaro";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/kebab-moratalaz" element={<KebabMoratalaz />} />
           <Route path="/kebab-valdebernardo" element={<KebabValdebernardo />} />
           <Route path="/kebab-vicalvaro" element={<KebabVicalvaro />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />
