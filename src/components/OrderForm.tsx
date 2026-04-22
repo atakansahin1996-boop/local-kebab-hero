@@ -103,7 +103,7 @@ const createCartItemId = () =>
   `cart-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 const hasMeatOption = (item: MenuItem) =>
-  CATEGORIES_WITH_INGREDIENTS.includes(item.category) &&
+  (CATEGORIES_WITH_INGREDIENTS.includes(item.category) || item.name.toLowerCase().includes("box")) &&
   !item.name.toLowerCase().includes("falafel") &&
   !item.name.toLowerCase().includes("vegetal");
 
