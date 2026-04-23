@@ -45,7 +45,6 @@ const MENU: MenuItem[] = [
 
 const CATEGORIES = [...new Set(MENU.map((m) => m.category))];
 const WHATSAPP_NUMBER = "34697878655";
-const BIZUM_NUMBER = "629 954 510";
 
 // Restaurant epicenter coordinates (Av. Doctor García Tapia 159, Madrid)
 const RESTAURANT_LAT = 40.4074228;
@@ -131,7 +130,7 @@ const OrderForm = () => {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [method, setMethod] = useState<"domicilio" | "recoger">("domicilio");
-  const [payment, setPayment] = useState<"efectivo" | "bizum">("efectivo");
+  const [payment, setPayment] = useState<"efectivo" | "tarjeta">("efectivo");
   const [billAmount, setBillAmount] = useState<number | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -316,8 +315,8 @@ const OrderForm = () => {
       .join("\n");
 
     const paymentLine =
-      payment === "bizum"
-        ? `💳 *Pago:* Bizum al ${BIZUM_NUMBER}`
+      payment === "tarjeta"
+        ? `💳 *Pago:* Tarjeta en domicilio (datáfono)`
         : `💵 *Pago:* Efectivo${billAmount ? ` (billete de ${billAmount}€)` : ""}`;
 
     const lines = [
@@ -355,7 +354,7 @@ const OrderForm = () => {
     name.trim() &&
     phone.trim() &&
     (method === "recoger" || (address.trim() && addressStatus === "ok")) &&
-    (payment === "bizum" || (billAmount && (billAmount === -1 || billAmount >= total)));
+    (payment === "tarjeta" || (billAmount && (billAmount === -1 || billAmount >= total)));
 
   const ProductCard = ({ item }: { item: MenuItem }) => {
     const count = countByProductName(item.name);
@@ -761,12 +760,12 @@ const OrderForm = () => {
                 Método de pago
               </p>
               <div className="flex gap-2 mb-3">
-                {(["efectivo", "bizum"] as const).map((p) => (
+                {(["efectivo", "tarjeta"] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => {
                       setPayment(p);
-                      if (p === "bizum") setBillAmount(null);
+                      if (p === "tarjeta") setBillAmount(null);
                     }}
                     className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                       payment === p
@@ -774,7 +773,7 @@ const OrderForm = () => {
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {p === "efectivo" ? "💵 Efectivo" : "💳 Bizum"}
+                    {p === "efectivo" ? "💵 Efectivo" : "💳 Tarjeta en domicilio"}
                   </button>
                 ))}
               </div>
@@ -815,15 +814,15 @@ const OrderForm = () => {
                 </div>
               )}
 
-              {payment === "bizum" && (
+              {payment === "tarjeta" && (
                 <div className="bg-card border border-primary/30 rounded-lg px-4 py-3 text-center">
-                  <p className="text-muted-foreground text-xs mb-1">
-                    Realiza el Bizum a:
-                  </p>
-                  <p className="text-primary font-bold text-lg tracking-wider">
-                    {BIZUM_NUMBER}
+                  <p className="text-foreground text-sm font-semibold">
+                    💳 Pago con tarjeta en tu domicilio
                   </p>
                   <p className="text-muted-foreground text-xs mt-1">
+                    Llevamos el datáfono y cobramos al entregar el pedido.
+                  </p>
+                  <p className="text-primary font-bold text-base mt-2">
                     Importe: {total.toFixed(2)}€
                   </p>
                 </div>
