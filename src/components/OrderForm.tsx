@@ -98,6 +98,60 @@ type CartItem = {
 
 const ORDER_SECTION_ID = "pedido-online";
 
+// Order schedule (Madrid timezone). Closed on Mondays.
+// Open: Tuesday-Sunday, 13:00-16:00 and 19:30-23:00
+const SCHEDULE_TEXT = "Mar–Dom · 13:00–16:00 y 19:30–23:00";
+
+type OrderScheduleStatus = {
+  open: boolean;
+  reason: "open" | "monday" | "before_lunch" | "between" | "after_dinner";
+  nextOpenLabel?: string;
+};
+
+const getMadridParts = (date = new Date()) => {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Madrid",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(date);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const weekdayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const weekday = weekdayMap[get("weekday")] ?? 0;
+  const hour = parseInt(get("hour"), 10);
+  const minute = parseInt(get("minute"), 10);
+  return { weekday, minutes: hour * 60 + minute };
+};
+
+const LUNCH_START = 13 * 60;
+const LUNCH_END = 16 * 60;
+const DINNER_START = 19 * 60 + 30;
+const DINNER_END = 23 * 60;
+
+const getOrderScheduleStatus = (): OrderScheduleStatus => {
+  const { weekday, minutes } = getMadridParts();
+  if (weekday === 1) {
+    return { open: false, reason: "monday", nextOpenLabel: "mañana martes a las 13:00" };
+  }
+  if (minutes < LUNCH_START) {
+    return { open: false, reason: "before_lunch", nextOpenLabel: "hoy a las 13:00" };
+  }
+  if (minutes >= LUNCH_START && minutes < LUNCH_END) {
+    return { open: true, reason: "open" };
+  }
+  if (minutes >= LUNCH_END && minutes < DINNER_START) {
+    return { open: false, reason: "between", nextOpenLabel: "hoy a las 19:30" };
+  }
+  if (minutes >= DINNER_START && minutes < DINNER_END) {
+    return { open: true, reason: "open" };
+  }
+  // After dinner
+  const nextLabel = weekday === 0 ? "el martes a las 13:00" : "mañana a las 13:00";
+  return { open: false, reason: "after_dinner", nextOpenLabel: nextLabel };
+};
+
 const createCartItemId = () =>
   `cart-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
