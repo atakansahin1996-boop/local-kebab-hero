@@ -416,6 +416,7 @@ const OrderForm = () => {
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
+    scheduleStatus.open &&
     (method === "recoger" || (address.trim() && addressStatus === "ok")) &&
     (payment === "tarjeta" || (billAmount && (billAmount === -1 || billAmount >= total)));
 
