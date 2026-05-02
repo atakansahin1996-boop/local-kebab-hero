@@ -190,6 +190,15 @@ const OrderForm = () => {
   const [savedNotice, setSavedNotice] = useState(false);
   const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
   const [addressDistance, setAddressDistance] = useState<number | null>(null);
+  const [scheduleStatus, setScheduleStatus] = useState<OrderScheduleStatus>(() => getOrderScheduleStatus());
+
+  // Refresh schedule status every 30 seconds
+  useEffect(() => {
+    const tick = () => setScheduleStatus(getOrderScheduleStatus());
+    tick();
+    const interval = setInterval(tick, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Debounced address geocoding & distance check
   useEffect(() => {
