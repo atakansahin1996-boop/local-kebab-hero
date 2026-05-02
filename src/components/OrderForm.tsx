@@ -625,9 +625,38 @@ const OrderForm = () => {
   return (
     <section id={ORDER_SECTION_ID} className="py-16 bg-secondary scroll-mt-24">
       <div className="container max-w-2xl">
-        <h2 className="font-display text-3xl md:text-4xl text-center text-foreground mb-8">
+        <h2 className="font-display text-3xl md:text-4xl text-center text-foreground mb-4">
           Haz tu pedido
         </h2>
+
+        {/* Schedule banner */}
+        <div
+          className={`mb-6 rounded-lg border px-4 py-3 text-center text-sm ${
+            scheduleStatus.open
+              ? "border-green-500/40 bg-green-500/10 text-foreground"
+              : "border-destructive/40 bg-destructive/10 text-foreground"
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {scheduleStatus.open ? (
+            <p>
+              <span className="font-bold">🟢 Estamos abiertos.</span>{" "}
+              <span className="text-muted-foreground">Horario: {SCHEDULE_TEXT}</span>
+            </p>
+          ) : (
+            <p>
+              <span className="font-bold">🔴 Pedidos cerrados.</span>{" "}
+              {scheduleStatus.reason === "monday"
+                ? "Los lunes descansamos."
+                : "Estamos fuera del horario de pedidos."}{" "}
+              {scheduleStatus.nextOpenLabel && (
+                <>Volvemos a abrir <span className="font-semibold">{scheduleStatus.nextOpenLabel}</span>. </>
+              )}
+              <span className="block text-muted-foreground mt-1">Horario: {SCHEDULE_TEXT}</span>
+            </p>
+          )}
+        </div>
 
         {/* Tabs: Carta / Carrito */}
         <div className="flex gap-2 mb-6">
