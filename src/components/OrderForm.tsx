@@ -98,6 +98,60 @@ type CartItem = {
 
 const ORDER_SECTION_ID = "pedido-online";
 
+// Order schedule (Madrid timezone). Closed on Mondays.
+// Open: Tuesday-Sunday, 13:00-16:00 and 19:30-23:00
+const SCHEDULE_TEXT = "Mar–Dom · 13:00–16:00 y 19:30–23:00";
+
+type OrderScheduleStatus = {
+  open: boolean;
+  reason: "open" | "monday" | "before_lunch" | "between" | "after_dinner";
+  nextOpenLabel?: string;
+};
+
+const getMadridParts = (date = new Date()) => {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Madrid",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(date);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const weekdayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const weekday = weekdayMap[get("weekday")] ?? 0;
+  const hour = parseInt(get("hour"), 10);
+  const minute = parseInt(get("minute"), 10);
+  return { weekday, minutes: hour * 60 + minute };
+};
+
+const LUNCH_START = 13 * 60;
+const LUNCH_END = 16 * 60;
+const DINNER_START = 19 * 60 + 30;
+const DINNER_END = 23 * 60;
+
+const getOrderScheduleStatus = (): OrderScheduleStatus => {
+  const { weekday, minutes } = getMadridParts();
+  if (weekday === 1) {
+    return { open: false, reason: "monday", nextOpenLabel: "mañana martes a las 13:00" };
+  }
+  if (minutes < LUNCH_START) {
+    return { open: false, reason: "before_lunch", nextOpenLabel: "hoy a las 13:00" };
+  }
+  if (minutes >= LUNCH_START && minutes < LUNCH_END) {
+    return { open: true, reason: "open" };
+  }
+  if (minutes >= LUNCH_END && minutes < DINNER_START) {
+    return { open: false, reason: "between", nextOpenLabel: "hoy a las 19:30" };
+  }
+  if (minutes >= DINNER_START && minutes < DINNER_END) {
+    return { open: true, reason: "open" };
+  }
+  // After dinner
+  const nextLabel = weekday === 0 ? "el martes a las 13:00" : "mañana a las 13:00";
+  return { open: false, reason: "after_dinner", nextOpenLabel: nextLabel };
+};
+
 const createCartItemId = () =>
   `cart-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -136,6 +190,15 @@ const OrderForm = () => {
   const [savedNotice, setSavedNotice] = useState(false);
   const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
   const [addressDistance, setAddressDistance] = useState<number | null>(null);
+  const [scheduleStatus, setScheduleStatus] = useState<OrderScheduleStatus>(() => getOrderScheduleStatus());
+
+  // Refresh schedule status every 30 seconds
+  useEffect(() => {
+    const tick = () => setScheduleStatus(getOrderScheduleStatus());
+    tick();
+    const interval = setInterval(tick, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Debounced address geocoding & distance check
   useEffect(() => {
@@ -339,6 +402,7 @@ const OrderForm = () => {
   };
 
   const handleSend = () => {
+    if (!scheduleStatus.open) return;
     if (cart.length === 0 || !name.trim() || !phone.trim()) return;
     if (method === "domicilio" && !address.trim()) return;
     if (payment === "efectivo" && (!billAmount || (billAmount > 0 && billAmount < total))) return;
@@ -353,6 +417,7 @@ const OrderForm = () => {
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
+    scheduleStatus.open &&
     (method === "recoger" || (address.trim() && addressStatus === "ok")) &&
     (payment === "tarjeta" || (billAmount && (billAmount === -1 || billAmount >= total)));
 
@@ -560,9 +625,38 @@ const OrderForm = () => {
   return (
     <section id={ORDER_SECTION_ID} className="py-16 bg-secondary scroll-mt-24">
       <div className="container max-w-2xl">
-        <h2 className="font-display text-3xl md:text-4xl text-center text-foreground mb-8">
+        <h2 className="font-display text-3xl md:text-4xl text-center text-foreground mb-4">
           Haz tu pedido
         </h2>
+
+        {/* Schedule banner */}
+        <div
+          className={`mb-6 rounded-lg border px-4 py-3 text-center text-sm ${
+            scheduleStatus.open
+              ? "border-green-500/40 bg-green-500/10 text-foreground"
+              : "border-destructive/40 bg-destructive/10 text-foreground"
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {scheduleStatus.open ? (
+            <p>
+              <span className="font-bold">🟢 Estamos abiertos.</span>{" "}
+              <span className="text-muted-foreground">Horario: {SCHEDULE_TEXT}</span>
+            </p>
+          ) : (
+            <p>
+              <span className="font-bold">🔴 Pedidos cerrados.</span>{" "}
+              {scheduleStatus.reason === "monday"
+                ? "Los lunes descansamos."
+                : "Estamos fuera del horario de pedidos."}{" "}
+              {scheduleStatus.nextOpenLabel && (
+                <>Volvemos a abrir <span className="font-semibold">{scheduleStatus.nextOpenLabel}</span>. </>
+              )}
+              <span className="block text-muted-foreground mt-1">Horario: {SCHEDULE_TEXT}</span>
+            </p>
+          )}
+        </div>
 
         {/* Tabs: Carta / Carrito */}
         <div className="flex gap-2 mb-6">
@@ -932,7 +1026,9 @@ const OrderForm = () => {
                 }
                 className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Enviar pedido por WhatsApp
+                {scheduleStatus.open
+                  ? "Enviar pedido por WhatsApp"
+                  : `Cerrado · ${scheduleStatus.nextOpenLabel ? `abrimos ${scheduleStatus.nextOpenLabel}` : "fuera de horario"}`}
               </button>
             </div>
           </>
