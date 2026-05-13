@@ -550,7 +550,7 @@ const OrderForm = () => {
         </div>
 
         {/* Expandable customization */}
-        {(canCustomize || canSelectMeat || isMenu(c.item)) && (
+        {(canCustomize || canSelectMeat || canSelectSide || isMenu(c.item)) && (
           <>
             <button
               onClick={() => setExpandedItemId(isExpanded ? null : c.id)}
