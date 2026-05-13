@@ -382,6 +382,7 @@ const OrderForm = () => {
       .map((c) => {
         let line = `• ${c.qty}x ${c.item.name}`;
         if (hasMeatOption(c.item)) line += ` (${c.meatType})`;
+        if (hasSideChoice(c.item) && c.sideType) line += ` 🍟 ${c.sideType}`;
         if (c.extras.length > 0) line += ` + ${c.extras.join(", ")}`;
         if (c.drink) line += ` 🥤 ${c.drink}`;
         line += ` — ${(c.unitPrice * c.qty).toFixed(2)}€`;
