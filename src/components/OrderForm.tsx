@@ -522,6 +522,9 @@ const OrderForm = () => {
               {canSelectMeat && (
                 <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🥩 {c.meatType}</span>
               )}
+              {canSelectSide && c.sideType && (
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🍟 {c.sideType}</span>
+              )}
               {c.extras.map((extra) => (
                 <span key={extra} className="text-xs bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">+{extra}</span>
               ))}
