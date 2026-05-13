@@ -349,13 +349,13 @@ const OrderForm = () => {
   const groupedForMessage = useMemo(() => {
     const grouped = new Map<
       string,
-      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; extras: string[]; drink: string; unitPrice: number }
+      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; sideType?: SideType; extras: string[]; drink: string; unitPrice: number }
     >();
 
     cart.forEach((cartItem) => {
       const ingredientsKey = [...cartItem.removedIngredients].sort().join("|");
       const extrasKey = [...cartItem.extras].sort().join("|");
-      const key = `${cartItem.item.name}|${cartItem.meatType}|${ingredientsKey}|${extrasKey}|${cartItem.drink}`;
+      const key = `${cartItem.item.name}|${cartItem.meatType}|${cartItem.sideType ?? ""}|${ingredientsKey}|${extrasKey}|${cartItem.drink}`;
       const existing = grouped.get(key);
 
       if (existing) {
@@ -366,6 +366,7 @@ const OrderForm = () => {
           item: cartItem.item,
           removedIngredients: cartItem.removedIngredients,
           meatType: cartItem.meatType,
+          sideType: cartItem.sideType,
           extras: cartItem.extras,
           drink: cartItem.drink,
           unitPrice: getItemTotal(cartItem),
