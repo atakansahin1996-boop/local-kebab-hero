@@ -508,6 +508,7 @@ const OrderForm = () => {
     const isExpanded = expandedItemId === c.id;
     const canCustomize = hasIngredients(c.item);
     const canSelectMeat = hasMeatOption(c.item);
+    const canSelectSide = hasSideChoice(c.item);
     const itemTotal = getItemTotal(c);
 
     return (
