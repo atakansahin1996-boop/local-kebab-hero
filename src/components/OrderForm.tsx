@@ -834,6 +834,7 @@ const OrderForm = () => {
                       <p className="text-foreground text-sm font-medium">
                         {c.qty}x {c.item.name}
                         {hasMeatOption(c.item) && ` (${c.meatType})`}
+                        {hasSideChoice(c.item) && c.sideType && ` · 🍟 ${c.sideType}`}
                       </p>
                       {c.extras.length > 0 && (
                         <p className="text-xs text-accent-foreground mt-0.5">
