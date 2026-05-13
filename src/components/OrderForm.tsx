@@ -70,6 +70,12 @@ const CATEGORIES_WITH_INGREDIENTS = ["Kebab", "Durum", "Plato", "Menú"];
 const MEAT_TYPES = ["Ternera", "Pollo", "Mixto"] as const;
 type MeatType = typeof MEAT_TYPES[number];
 
+const SIDE_TYPES = ["Patatas", "Arroz"] as const;
+type SideType = typeof SIDE_TYPES[number];
+
+const ITEMS_WITH_SIDE_CHOICE = ["Plato con patatas o arroz", "Menú Plato"];
+const hasSideChoice = (item: MenuItem) => ITEMS_WITH_SIDE_CHOICE.includes(item.name);
+
 const EXTRAS = [
   { name: "Queso", price: 0.70 },
   { name: "Extra de carne", price: 1.50 },
@@ -92,6 +98,7 @@ type CartItem = {
   item: MenuItem;
   removedIngredients: string[];
   meatType: MeatType;
+  sideType?: SideType;
   extras: string[];
   drink: string;
 };
@@ -259,6 +266,7 @@ const OrderForm = () => {
       item,
       removedIngredients: [],
       meatType: "Ternera",
+      sideType: hasSideChoice(item) ? "Patatas" : undefined,
       extras: [],
       drink: isMenu(item) ? "Coca Cola" : "",
     };
@@ -308,6 +316,12 @@ const OrderForm = () => {
     );
   };
 
+  const setSideType = (itemId: string, sideType: SideType) => {
+    setCart((prev) =>
+      prev.map((c) => (c.id === itemId ? { ...c, sideType } : c))
+    );
+  };
+
   const toggleExtra = (itemId: string, extraName: string) => {
     setCart((prev) =>
       prev.map((c) => {
@@ -335,13 +349,13 @@ const OrderForm = () => {
   const groupedForMessage = useMemo(() => {
     const grouped = new Map<
       string,
-      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; extras: string[]; drink: string; unitPrice: number }
+      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; sideType?: SideType; extras: string[]; drink: string; unitPrice: number }
     >();
 
     cart.forEach((cartItem) => {
       const ingredientsKey = [...cartItem.removedIngredients].sort().join("|");
       const extrasKey = [...cartItem.extras].sort().join("|");
-      const key = `${cartItem.item.name}|${cartItem.meatType}|${ingredientsKey}|${extrasKey}|${cartItem.drink}`;
+      const key = `${cartItem.item.name}|${cartItem.meatType}|${cartItem.sideType ?? ""}|${ingredientsKey}|${extrasKey}|${cartItem.drink}`;
       const existing = grouped.get(key);
 
       if (existing) {
@@ -352,6 +366,7 @@ const OrderForm = () => {
           item: cartItem.item,
           removedIngredients: cartItem.removedIngredients,
           meatType: cartItem.meatType,
+          sideType: cartItem.sideType,
           extras: cartItem.extras,
           drink: cartItem.drink,
           unitPrice: getItemTotal(cartItem),
@@ -367,6 +382,7 @@ const OrderForm = () => {
       .map((c) => {
         let line = `• ${c.qty}x ${c.item.name}`;
         if (hasMeatOption(c.item)) line += ` (${c.meatType})`;
+        if (hasSideChoice(c.item) && c.sideType) line += ` 🍟 ${c.sideType}`;
         if (c.extras.length > 0) line += ` + ${c.extras.join(", ")}`;
         if (c.drink) line += ` 🥤 ${c.drink}`;
         line += ` — ${(c.unitPrice * c.qty).toFixed(2)}€`;
@@ -492,6 +508,7 @@ const OrderForm = () => {
     const isExpanded = expandedItemId === c.id;
     const canCustomize = hasIngredients(c.item);
     const canSelectMeat = hasMeatOption(c.item);
+    const canSelectSide = hasSideChoice(c.item);
     const itemTotal = getItemTotal(c);
 
     return (
@@ -504,6 +521,9 @@ const OrderForm = () => {
             <div className="flex flex-wrap gap-1 mt-0.5">
               {canSelectMeat && (
                 <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🥩 {c.meatType}</span>
+              )}
+              {canSelectSide && c.sideType && (
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🍟 {c.sideType}</span>
               )}
               {c.extras.map((extra) => (
                 <span key={extra} className="text-xs bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">+{extra}</span>
@@ -530,7 +550,7 @@ const OrderForm = () => {
         </div>
 
         {/* Expandable customization */}
-        {(canCustomize || canSelectMeat || isMenu(c.item)) && (
+        {(canCustomize || canSelectMeat || canSelectSide || isMenu(c.item)) && (
           <>
             <button
               onClick={() => setExpandedItemId(isExpanded ? null : c.id)}
@@ -558,6 +578,28 @@ const OrderForm = () => {
                           }`}
                         >
                           {meat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Side selector (patatas / arroz) */}
+                {canSelectSide && (
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1.5">🍟 Acompañamiento:</p>
+                    <div className="flex gap-2">
+                      {SIDE_TYPES.map((side) => (
+                        <button
+                          key={side}
+                          onClick={() => setSideType(c.id, side)}
+                          className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                            c.sideType === side
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-primary/20"
+                          }`}
+                        >
+                          {side}
                         </button>
                       ))}
                     </div>
@@ -792,6 +834,7 @@ const OrderForm = () => {
                       <p className="text-foreground text-sm font-medium">
                         {c.qty}x {c.item.name}
                         {hasMeatOption(c.item) && ` (${c.meatType})`}
+                        {hasSideChoice(c.item) && c.sideType && ` · 🍟 ${c.sideType}`}
                       </p>
                       {c.extras.length > 0 && (
                         <p className="text-xs text-accent-foreground mt-0.5">
