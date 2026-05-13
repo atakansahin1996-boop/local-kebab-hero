@@ -98,6 +98,7 @@ type CartItem = {
   item: MenuItem;
   removedIngredients: string[];
   meatType: MeatType;
+  sideType?: SideType;
   extras: string[];
   drink: string;
 };
