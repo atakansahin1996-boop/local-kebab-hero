@@ -316,6 +316,12 @@ const OrderForm = () => {
     );
   };
 
+  const setSideType = (itemId: string, sideType: SideType) => {
+    setCart((prev) =>
+      prev.map((c) => (c.id === itemId ? { ...c, sideType } : c))
+    );
+  };
+
   const toggleExtra = (itemId: string, extraName: string) => {
     setCart((prev) =>
       prev.map((c) => {
