@@ -584,6 +584,28 @@ const OrderForm = () => {
                   </div>
                 )}
 
+                {/* Side selector (patatas / arroz) */}
+                {canSelectSide && (
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1.5">🍟 Acompañamiento:</p>
+                    <div className="flex gap-2">
+                      {SIDE_TYPES.map((side) => (
+                        <button
+                          key={side}
+                          onClick={() => setSideType(c.id, side)}
+                          className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                            c.sideType === side
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-primary/20"
+                          }`}
+                        >
+                          {side}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Extras (cross-sell) */}
                 <div>
                   <p className="text-xs text-muted-foreground font-medium mb-1.5">➕ Extras:</p>
