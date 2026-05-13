@@ -70,6 +70,12 @@ const CATEGORIES_WITH_INGREDIENTS = ["Kebab", "Durum", "Plato", "Menú"];
 const MEAT_TYPES = ["Ternera", "Pollo", "Mixto"] as const;
 type MeatType = typeof MEAT_TYPES[number];
 
+const SIDE_TYPES = ["Patatas", "Arroz"] as const;
+type SideType = typeof SIDE_TYPES[number];
+
+const ITEMS_WITH_SIDE_CHOICE = ["Plato con patatas o arroz", "Menú Plato"];
+const hasSideChoice = (item: MenuItem) => ITEMS_WITH_SIDE_CHOICE.includes(item.name);
+
 const EXTRAS = [
   { name: "Queso", price: 0.70 },
   { name: "Extra de carne", price: 1.50 },
