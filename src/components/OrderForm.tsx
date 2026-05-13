@@ -266,6 +266,7 @@ const OrderForm = () => {
       item,
       removedIngredients: [],
       meatType: "Ternera",
+      sideType: hasSideChoice(item) ? "Patatas" : undefined,
       extras: [],
       drink: isMenu(item) ? "Coca Cola" : "",
     };
