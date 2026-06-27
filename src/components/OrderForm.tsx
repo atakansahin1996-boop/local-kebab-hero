@@ -73,7 +73,7 @@ type MeatType = typeof MEAT_TYPES[number];
 const SIDE_TYPES = ["Patatas", "Arroz"] as const;
 type SideType = typeof SIDE_TYPES[number];
 
-const ITEMS_WITH_SIDE_CHOICE = ["Plato con patatas o arroz", "Menú Plato"];
+const ITEMS_WITH_SIDE_CHOICE = ["Plato con patatas o arroz", "Menú Plato", "Plato Falafel", "Plato Antep"];
 const hasSideChoice = (item: MenuItem) => ITEMS_WITH_SIDE_CHOICE.includes(item.name);
 
 const EXTRAS = [
