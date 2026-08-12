@@ -137,6 +137,13 @@ const LUNCH_END = 16 * 60;
 const DINNER_START = 19 * 60 + 30;
 const DINNER_END = 23 * 60;
 
+const getMadridDateString = (date = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(date);
+
+// Temporary summer closure: closed until 24 Aug 2026 inclusive, reopen 25 Aug 2026.
+const isTemporaryClosure = (date = new Date()) =>
+  getMadridDateString(date) < "2026-08-25";
+
 const getOrderScheduleStatus = (): OrderScheduleStatus => {
   const { weekday, minutes } = getMadridParts();
   if (weekday === 1) {
