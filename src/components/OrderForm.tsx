@@ -429,7 +429,7 @@ const OrderForm = () => {
   };
 
   const handleSend = () => {
-    if (!scheduleStatus.open) return;
+    if (isClosed || !scheduleStatus.open) return;
     if (cart.length === 0 || !name.trim() || !phone.trim()) return;
     if (method === "domicilio" && !address.trim()) return;
     if (payment === "efectivo" && (!billAmount || (billAmount > 0 && billAmount < total))) return;
