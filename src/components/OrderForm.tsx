@@ -205,10 +205,14 @@ const OrderForm = () => {
   const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
   const [addressDistance, setAddressDistance] = useState<number | null>(null);
   const [scheduleStatus, setScheduleStatus] = useState<OrderScheduleStatus>(() => getOrderScheduleStatus());
+  const [isClosed, setIsClosed] = useState<boolean>(() => isTemporaryClosure());
 
   // Refresh schedule status every 30 seconds
   useEffect(() => {
-    const tick = () => setScheduleStatus(getOrderScheduleStatus());
+    const tick = () => {
+      setScheduleStatus(getOrderScheduleStatus());
+      setIsClosed(isTemporaryClosure());
+    };
     tick();
     const interval = setInterval(tick, 30_000);
     return () => clearInterval(interval);
