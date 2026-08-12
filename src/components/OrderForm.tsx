@@ -137,6 +137,13 @@ const LUNCH_END = 16 * 60;
 const DINNER_START = 19 * 60 + 30;
 const DINNER_END = 23 * 60;
 
+const getMadridDateString = (date = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(date);
+
+// Temporary summer closure: closed until 24 Aug 2026 inclusive, reopen 25 Aug 2026.
+const isTemporaryClosure = (date = new Date()) =>
+  getMadridDateString(date) < "2026-08-25";
+
 const getOrderScheduleStatus = (): OrderScheduleStatus => {
   const { weekday, minutes } = getMadridParts();
   if (weekday === 1) {
@@ -198,10 +205,14 @@ const OrderForm = () => {
   const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
   const [addressDistance, setAddressDistance] = useState<number | null>(null);
   const [scheduleStatus, setScheduleStatus] = useState<OrderScheduleStatus>(() => getOrderScheduleStatus());
+  const [isClosed, setIsClosed] = useState<boolean>(() => isTemporaryClosure());
 
   // Refresh schedule status every 30 seconds
   useEffect(() => {
-    const tick = () => setScheduleStatus(getOrderScheduleStatus());
+    const tick = () => {
+      setScheduleStatus(getOrderScheduleStatus());
+      setIsClosed(isTemporaryClosure());
+    };
     tick();
     const interval = setInterval(tick, 30_000);
     return () => clearInterval(interval);
@@ -418,7 +429,7 @@ const OrderForm = () => {
   };
 
   const handleSend = () => {
-    if (!scheduleStatus.open) return;
+    if (isClosed || !scheduleStatus.open) return;
     if (cart.length === 0 || !name.trim() || !phone.trim()) return;
     if (method === "domicilio" && !address.trim()) return;
     if (payment === "efectivo" && (!billAmount || (billAmount > 0 && billAmount < total))) return;
@@ -430,6 +441,7 @@ const OrderForm = () => {
   };
 
   const isFormValid =
+    !isClosed &&
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
@@ -671,17 +683,33 @@ const OrderForm = () => {
           Haz tu pedido
         </h2>
 
+        {/* Temporary closure banner */}
+        {isClosed && (
+          <div
+            className="mb-6 rounded-lg border border-destructive/60 bg-destructive/15 px-4 py-4 text-center"
+            role="alert"
+            aria-live="assertive"
+          >
+            <p className="font-display text-xl md:text-2xl text-destructive tracking-wide uppercase font-bold">
+              VOLVEMOS EL 25 DE AGOSTO
+            </p>
+            <p className="text-foreground text-sm mt-1">
+              Estamos cerrados por vacaciones. No se pueden realizar pedidos hasta el 25 de agosto de 2026.
+            </p>
+          </div>
+        )}
+
         {/* Schedule banner */}
         <div
           className={`mb-6 rounded-lg border px-4 py-3 text-center text-sm ${
-            scheduleStatus.open
+            scheduleStatus.open && !isClosed
               ? "border-green-500/40 bg-green-500/10 text-foreground"
               : "border-destructive/40 bg-destructive/10 text-foreground"
           }`}
           role="status"
           aria-live="polite"
         >
-          {scheduleStatus.open ? (
+          {scheduleStatus.open && !isClosed ? (
             <p>
               <span className="font-bold">🟢 Estamos abiertos.</span>{" "}
               <span className="text-muted-foreground">Horario: {SCHEDULE_TEXT}</span>
@@ -689,10 +717,12 @@ const OrderForm = () => {
           ) : (
             <p>
               <span className="font-bold">🔴 Pedidos cerrados.</span>{" "}
-              {scheduleStatus.reason === "monday"
+              {isClosed
+                ? "Volvemos el 25 de agosto de 2026."
+                : scheduleStatus.reason === "monday"
                 ? "Los lunes descansamos."
                 : "Estamos fuera del horario de pedidos."}{" "}
-              {scheduleStatus.nextOpenLabel && (
+              {!isClosed && scheduleStatus.nextOpenLabel && (
                 <>Volvemos a abrir <span className="font-semibold">{scheduleStatus.nextOpenLabel}</span>. </>
               )}
               <span className="block text-muted-foreground mt-1">Horario: {SCHEDULE_TEXT}</span>
@@ -1069,7 +1099,9 @@ const OrderForm = () => {
                 }
                 className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {scheduleStatus.open
+                {isClosed
+                  ? "VOLVEMOS EL 25 DE AGOSTO"
+                  : scheduleStatus.open
                   ? "Enviar pedido por WhatsApp"
                   : `Cerrado · ${scheduleStatus.nextOpenLabel ? `abrimos ${scheduleStatus.nextOpenLabel}` : "fuera de horario"}`}
               </button>
