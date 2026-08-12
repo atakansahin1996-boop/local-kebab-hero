@@ -683,17 +683,33 @@ const OrderForm = () => {
           Haz tu pedido
         </h2>
 
+        {/* Temporary closure banner */}
+        {isClosed && (
+          <div
+            className="mb-6 rounded-lg border border-destructive/60 bg-destructive/15 px-4 py-4 text-center"
+            role="alert"
+            aria-live="assertive"
+          >
+            <p className="font-display text-xl md:text-2xl text-destructive tracking-wide uppercase font-bold">
+              VOLVEMOS EL 25 DE AGOSTO
+            </p>
+            <p className="text-foreground text-sm mt-1">
+              Estamos cerrados por vacaciones. No se pueden realizar pedidos hasta el 25 de agosto de 2026.
+            </p>
+          </div>
+        )}
+
         {/* Schedule banner */}
         <div
           className={`mb-6 rounded-lg border px-4 py-3 text-center text-sm ${
-            scheduleStatus.open
+            scheduleStatus.open && !isClosed
               ? "border-green-500/40 bg-green-500/10 text-foreground"
               : "border-destructive/40 bg-destructive/10 text-foreground"
           }`}
           role="status"
           aria-live="polite"
         >
-          {scheduleStatus.open ? (
+          {scheduleStatus.open && !isClosed ? (
             <p>
               <span className="font-bold">🟢 Estamos abiertos.</span>{" "}
               <span className="text-muted-foreground">Horario: {SCHEDULE_TEXT}</span>
@@ -701,10 +717,12 @@ const OrderForm = () => {
           ) : (
             <p>
               <span className="font-bold">🔴 Pedidos cerrados.</span>{" "}
-              {scheduleStatus.reason === "monday"
+              {isClosed
+                ? "Volvemos el 25 de agosto de 2026."
+                : scheduleStatus.reason === "monday"
                 ? "Los lunes descansamos."
                 : "Estamos fuera del horario de pedidos."}{" "}
-              {scheduleStatus.nextOpenLabel && (
+              {!isClosed && scheduleStatus.nextOpenLabel && (
                 <>Volvemos a abrir <span className="font-semibold">{scheduleStatus.nextOpenLabel}</span>. </>
               )}
               <span className="block text-muted-foreground mt-1">Horario: {SCHEDULE_TEXT}</span>
