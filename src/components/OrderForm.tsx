@@ -441,6 +441,7 @@ const OrderForm = () => {
   };
 
   const isFormValid =
+    !isClosed &&
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
