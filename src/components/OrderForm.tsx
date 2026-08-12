@@ -1099,7 +1099,9 @@ const OrderForm = () => {
                 }
                 className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {scheduleStatus.open
+                {isClosed
+                  ? "VOLVEMOS EL 25 DE AGOSTO"
+                  : scheduleStatus.open
                   ? "Enviar pedido por WhatsApp"
                   : `Cerrado · ${scheduleStatus.nextOpenLabel ? `abrimos ${scheduleStatus.nextOpenLabel}` : "fuera de horario"}`}
               </button>
