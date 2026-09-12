@@ -38,7 +38,6 @@ const MENU: MenuItem[] = [
   { name: "Nuggets", price: 5.0, category: "Raciones" },
   { name: "Palitos de queso", price: 6.0, category: "Raciones" },
   { name: "Falafel (ración)", price: 5.0, category: "Raciones" },
-  { name: "Box Kebab", price: 6.0, category: "Raciones" },
   { name: "Refrescos", price: 2.8, category: "Bebidas" },
   { name: "Agua", price: 1.5, category: "Bebidas" },
 ];
@@ -170,7 +169,7 @@ const createCartItemId = () =>
   `cart-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 const hasMeatOption = (item: MenuItem) =>
-  (CATEGORIES_WITH_INGREDIENTS.includes(item.category) || item.name.toLowerCase().includes("box")) &&
+  CATEGORIES_WITH_INGREDIENTS.includes(item.category) &&
   !item.name.toLowerCase().includes("falafel") &&
   !item.name.toLowerCase().includes("vegetal");
 
