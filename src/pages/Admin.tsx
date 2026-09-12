@@ -118,7 +118,7 @@ const Admin = () => {
     else if (p.product_name.startsWith("Menú")) cat = "Menú";
     else if (p.product_name.includes("alitas")) cat = "Alitas";
     else if (
-      ["Patatas", "Arroz", "Nuggets", "Palitos de queso", "Falafel (ración)", "Box Kebab"].includes(
+      ["Patatas", "Arroz", "Nuggets", "Palitos de queso", "Falafel (ración)"].includes(
         p.product_name
       )
     )

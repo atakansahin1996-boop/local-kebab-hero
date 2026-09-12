@@ -68,7 +68,6 @@ const menuData: Category[] = [
       { name: "Nuggets", price: "5,00€", productKey: "Nuggets" },
       { name: "Palitos de queso", price: "6,00€", productKey: "Palitos de queso" },
       { name: "Falafel", price: "5,00€", productKey: "Falafel (ración)" },
-      { name: "Box Kebab", price: "6,00€", productKey: "Box Kebab" },
     ],
   },
   {
