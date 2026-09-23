@@ -713,10 +713,10 @@ const OrderForm = () => {
             aria-live="assertive"
           >
             <p className="font-display text-xl md:text-2xl text-destructive tracking-wide uppercase font-bold">
-              VOLVEMOS EL 25 DE AGOSTO
+              {closure.title}
             </p>
             <p className="text-foreground text-sm mt-1">
-              Estamos cerrados por vacaciones. No se pueden realizar pedidos hasta el 25 de agosto de 2026.
+              {closure.detail}
             </p>
           </div>
         )}
@@ -740,7 +740,7 @@ const OrderForm = () => {
             <p>
               <span className="font-bold">🔴 Pedidos cerrados.</span>{" "}
               {isClosed
-                ? "Volvemos el 25 de agosto de 2026."
+                ? closure.detail
                 : scheduleStatus.reason === "monday"
                 ? "Los lunes descansamos."
                 : "Estamos fuera del horario de pedidos."}{" "}
