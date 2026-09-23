@@ -233,7 +233,7 @@ const OrderForm = () => {
   useEffect(() => {
     const tick = () => {
       setScheduleStatus(getOrderScheduleStatus());
-      setIsClosed(isTemporaryClosure());
+      setClosure(getTemporaryClosure());
     };
     tick();
     const interval = setInterval(tick, 30_000);
