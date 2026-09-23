@@ -139,9 +139,31 @@ const DINNER_END = 23 * 60;
 const getMadridDateString = (date = new Date()) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(date);
 
-// Temporary summer closure: closed until 24 Aug 2026 inclusive, reopen 25 Aug 2026.
-const isTemporaryClosure = (date = new Date()) =>
-  getMadridDateString(date) < "2026-08-25";
+// Specific closed days (e.g. ran out of stock). Add dates as "YYYY-MM-DD" (Madrid).
+const EXTRA_CLOSED_DATES = new Set(["2026-09-23"]);
+
+type TemporaryClosure = { closed: boolean; title: string; detail: string };
+
+const getTemporaryClosure = (date = new Date()): TemporaryClosure => {
+  const d = getMadridDateString(date);
+  if (d < "2026-08-25") {
+    return {
+      closed: true,
+      title: "VOLVEMOS EL 25 DE AGOSTO",
+      detail:
+        "Estamos cerrados por vacaciones. No se pueden realizar pedidos hasta el 25 de agosto de 2026.",
+    };
+  }
+  if (EXTRA_CLOSED_DATES.has(d)) {
+    return {
+      closed: true,
+      title: "HOY ESTAMOS CERRADOS",
+      detail:
+        "Hoy se nos ha agotado el género. No se pueden realizar pedidos; volvemos mañana en el horario habitual.",
+    };
+  }
+  return { closed: false, title: "", detail: "" };
+};
 
 const getOrderScheduleStatus = (): OrderScheduleStatus => {
   const { weekday, minutes } = getMadridParts();
@@ -204,13 +226,14 @@ const OrderForm = () => {
   const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
   const [addressDistance, setAddressDistance] = useState<number | null>(null);
   const [scheduleStatus, setScheduleStatus] = useState<OrderScheduleStatus>(() => getOrderScheduleStatus());
-  const [isClosed, setIsClosed] = useState<boolean>(() => isTemporaryClosure());
+  const [closure, setClosure] = useState<TemporaryClosure>(() => getTemporaryClosure());
+  const isClosed = closure.closed;
 
   // Refresh schedule status every 30 seconds
   useEffect(() => {
     const tick = () => {
       setScheduleStatus(getOrderScheduleStatus());
-      setIsClosed(isTemporaryClosure());
+      setClosure(getTemporaryClosure());
     };
     tick();
     const interval = setInterval(tick, 30_000);
@@ -690,10 +713,10 @@ const OrderForm = () => {
             aria-live="assertive"
           >
             <p className="font-display text-xl md:text-2xl text-destructive tracking-wide uppercase font-bold">
-              VOLVEMOS EL 25 DE AGOSTO
+              {closure.title}
             </p>
             <p className="text-foreground text-sm mt-1">
-              Estamos cerrados por vacaciones. No se pueden realizar pedidos hasta el 25 de agosto de 2026.
+              {closure.detail}
             </p>
           </div>
         )}
@@ -717,7 +740,7 @@ const OrderForm = () => {
             <p>
               <span className="font-bold">🔴 Pedidos cerrados.</span>{" "}
               {isClosed
-                ? "Volvemos el 25 de agosto de 2026."
+                ? closure.detail
                 : scheduleStatus.reason === "monday"
                 ? "Los lunes descansamos."
                 : "Estamos fuera del horario de pedidos."}{" "}
@@ -1099,7 +1122,7 @@ const OrderForm = () => {
                 className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isClosed
-                  ? "VOLVEMOS EL 25 DE AGOSTO"
+                  ? closure.title
                   : scheduleStatus.open
                   ? "Enviar pedido por WhatsApp"
                   : `Cerrado · ${scheduleStatus.nextOpenLabel ? `abrimos ${scheduleStatus.nextOpenLabel}` : "fuera de horario"}`}
