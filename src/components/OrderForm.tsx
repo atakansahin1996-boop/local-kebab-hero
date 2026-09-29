@@ -40,6 +40,7 @@ const MENU: MenuItem[] = [
   { name: "Falafel (ración)", price: 5.0, category: "Raciones" },
   { name: "Refrescos", price: 2.8, category: "Bebidas" },
   { name: "Agua", price: 1.5, category: "Bebidas" },
+  { name: "Baklava", price: 1.5, category: "Postres" },
 ];
 
 const CATEGORIES = [...new Set(MENU.map((m) => m.category))];

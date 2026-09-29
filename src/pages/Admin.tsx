@@ -124,6 +124,7 @@ const Admin = () => {
     )
       cat = "Raciones";
     else if (["Refrescos", "Agua"].includes(p.product_name)) cat = "Bebidas";
+    else if (p.product_name === "Baklava") cat = "Postres";
 
     if (!categories.has(cat)) categories.set(cat, []);
     categories.get(cat)!.push(p);
