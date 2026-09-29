@@ -77,6 +77,10 @@ const menuData: Category[] = [
       { name: "Agua", price: "1,50€", productKey: "Agua" },
     ],
   },
+  {
+    name: "Postres",
+    items: [{ name: "Baklava", price: "1,50€", productKey: "Baklava" }],
+  },
 ];
 
 const MenuSection = () => {
