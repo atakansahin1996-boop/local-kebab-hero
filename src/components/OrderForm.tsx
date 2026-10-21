@@ -141,7 +141,12 @@ const getMadridDateString = (date = new Date()) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(date);
 
 // Specific closed days (e.g. ran out of stock). Add dates as "YYYY-MM-DD" (Madrid).
-const EXTRA_CLOSED_DATES = new Set(["2026-09-23", "2026-10-06", "2026-10-17"]);
+const EXTRA_CLOSED_DATES = new Set([
+  "2026-09-23",
+  "2026-10-06",
+  "2026-10-17",
+  "2026-10-21",
+]);
 
 type TemporaryClosure = { closed: boolean; title: string; detail: string };
 
