@@ -1100,6 +1100,10 @@ const OrderForm = () => {
                       ⚠️ No se ha encontrado la dirección. Incluye calle y número.
                     </p>
                   )}
+                  <p className="text-muted-foreground text-xs mt-2 ml-1 flex items-start gap-1.5">
+                    <Phone size={13} className="mt-0.5 shrink-0" />
+                    <span>Si no reconoce tu dirección llama al 917523260. Gracias.</span>
+                  </p>
                 </div>
               )}
               <textarea
