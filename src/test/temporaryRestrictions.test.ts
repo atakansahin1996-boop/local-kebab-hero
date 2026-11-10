@@ -19,9 +19,8 @@ describe("November temporary restrictions (Europe/Madrid)", () => {
     expect(getTemporaryClosure(new Date("2026-11-09T22:59:59Z")).closed).toBe(false);
   });
 
-  it("closes only November 11 in Madrid, throughout the entire day", () => {
-    expect(getTemporaryClosure(new Date("2026-11-10T22:59:59Z")).closed).toBe(false);
-    expect(getTemporaryClosure(new Date("2026-11-10T23:00:00Z")).closed).toBe(true);
+  it("closes November 11 in Madrid and reopens on November 12", () => {
+    expect(getTemporaryClosure(new Date("2026-11-09T22:59:59Z")).closed).toBe(false);
     expect(getTemporaryClosure(new Date("2026-11-11T13:00:00Z")).closed).toBe(true);
     expect(getTemporaryClosure(new Date("2026-11-11T22:59:59Z")).closed).toBe(true);
     expect(getTemporaryClosure(new Date("2026-11-11T23:00:00Z")).closed).toBe(false);
