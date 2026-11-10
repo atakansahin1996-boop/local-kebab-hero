@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash2, MapPin, User, Phone, ChevronDown, ChevronUp, Save, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProductAvailability, isProductAvailable } from "@/hooks/useProductAvailability";
+import { useTemporaryRestrictions } from "@/hooks/useTemporaryRestrictions";
+import { getTemporaryClosure, isProductTemporarilyHidden } from "@/lib/temporaryRestrictions";
 
 type MenuItem = { name: string; price: number; category: string };
 
@@ -43,7 +45,6 @@ const MENU: MenuItem[] = [
   { name: "Baklava", price: 1.5, category: "Postres" },
 ];
 
-const CATEGORIES = [...new Set(MENU.map((m) => m.category))];
 const WHATSAPP_NUMBER = "34697878655";
 
 // Restaurant epicenter coordinates (Av. Doctor García Tapia 159, Madrid)
@@ -137,40 +138,6 @@ const LUNCH_END = 16 * 60;
 const DINNER_START = 19 * 60 + 30;
 const DINNER_END = 23 * 60;
 
-const getMadridDateString = (date = new Date()) =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(date);
-
-// Specific closed days (e.g. ran out of stock). Add dates as "YYYY-MM-DD" (Madrid).
-const EXTRA_CLOSED_DATES = new Set([
-  "2026-09-23",
-  "2026-10-06",
-  "2026-10-17",
-  "2026-10-21",
-]);
-
-type TemporaryClosure = { closed: boolean; title: string; detail: string };
-
-const getTemporaryClosure = (date = new Date()): TemporaryClosure => {
-  const d = getMadridDateString(date);
-  if (d < "2026-08-25") {
-    return {
-      closed: true,
-      title: "VOLVEMOS EL 25 DE AGOSTO",
-      detail:
-        "Estamos cerrados por vacaciones. No se pueden realizar pedidos hasta el 25 de agosto de 2026.",
-    };
-  }
-  if (EXTRA_CLOSED_DATES.has(d)) {
-    return {
-      closed: true,
-      title: "HOY ESTAMOS CERRADOS",
-      detail:
-        "Hoy se nos ha agotado el género. No se pueden realizar pedidos; volvemos mañana en el horario habitual.",
-    };
-  }
-  return { closed: false, title: "", detail: "" };
-};
-
 const getOrderScheduleStatus = (): OrderScheduleStatus => {
   const { weekday, minutes } = getMadridParts();
   if (weekday === 1) {
@@ -204,7 +171,7 @@ const hasMeatOption = (item: MenuItem) =>
 const loadCartFromStorage = (): CartItem[] => {
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) return (JSON.parse(stored) as CartItem[]).filter((c) => !isProductTemporarilyHidden(c.item.name));
   } catch {}
   return [];
 };
@@ -217,6 +184,9 @@ const saveCartToStorage = (cart: CartItem[]) => {
 
 const OrderForm = () => {
   const { data: availability } = useProductAvailability();
+  const { closure, isHidden } = useTemporaryRestrictions();
+  const visibleMenu = MENU.filter((item) => !isHidden(item.name));
+  const CATEGORIES = [...new Set(visibleMenu.map((item) => item.category))];
   const [activeCat, setActiveCat] = useState(0);
   const [cart, setCart] = useState<CartItem[]>(loadCartFromStorage);
   const [step, setStep] = useState<"menu" | "datos" | "carrito">("menu");
@@ -232,19 +202,23 @@ const OrderForm = () => {
   const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
   const [addressDistance, setAddressDistance] = useState<number | null>(null);
   const [scheduleStatus, setScheduleStatus] = useState<OrderScheduleStatus>(() => getOrderScheduleStatus());
-  const [closure, setClosure] = useState<TemporaryClosure>(() => getTemporaryClosure());
   const isClosed = closure.closed;
 
   // Refresh schedule status every 30 seconds
   useEffect(() => {
     const tick = () => {
       setScheduleStatus(getOrderScheduleStatus());
-      setClosure(getTemporaryClosure());
     };
     tick();
     const interval = setInterval(tick, 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    setCart((previous) => previous.some((c) => isHidden(c.item.name))
+      ? previous.filter((c) => !isHidden(c.item.name))
+      : previous);
+  }, [closure, isHidden]);
 
   // Debounced address geocoding & distance check
   useEffect(() => {
@@ -300,6 +274,7 @@ const OrderForm = () => {
   const isMenu = (item: MenuItem) => item.category === "Menú";
 
   const addToCart = (item: MenuItem, goToCart = false) => {
+    if (isProductTemporarilyHidden(item.name)) return;
     const newCartItem: CartItem = {
       id: createCartItemId(),
       item,
@@ -457,7 +432,8 @@ const OrderForm = () => {
   };
 
   const handleSend = () => {
-    if (isClosed || !scheduleStatus.open) return;
+    if (getTemporaryClosure().closed || !getOrderScheduleStatus().open) return;
+    if (cart.some((c) => isProductTemporarilyHidden(c.item.name))) return;
     if (cart.length === 0 || !name.trim() || !phone.trim()) return;
     if (method === "domicilio" && !address.trim()) return;
     if (payment === "efectivo" && (!billAmount || (billAmount > 0 && billAmount < total))) return;
@@ -470,6 +446,7 @@ const OrderForm = () => {
 
   const isFormValid =
     !isClosed &&
+    !cart.some((c) => isHidden(c.item.name)) &&
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
@@ -799,7 +776,7 @@ const OrderForm = () => {
 
             {/* Product list */}
             <div className="space-y-2 mb-6">
-              {MENU.filter((m) => m.category === CATEGORIES[activeCat]).map(
+              {visibleMenu.filter((m) => m.category === (CATEGORIES[activeCat] ?? CATEGORIES[0])).map(
                 (item) => (
                   <ProductCard key={item.name} item={item} />
                 )
@@ -866,7 +843,7 @@ const OrderForm = () => {
                   </button>
                   <button
                     onClick={() => setStep("datos")}
-                    disabled={method === "domicilio" && total < 15}
+                    disabled={isClosed || (method === "domicilio" && total < 15)}
                     className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-[var(--shadow-gold)] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Continuar con el pedido

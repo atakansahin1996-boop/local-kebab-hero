@@ -1,0 +1,1 @@
+- Keep dated closures and product hiding rules in the shared temporary restrictions module, using Europe/Madrid; both menu views and ordering guards must apply the same rules to avoid inconsistent availability.
