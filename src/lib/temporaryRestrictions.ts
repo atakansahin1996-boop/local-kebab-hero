@@ -11,6 +11,7 @@ const EXTRA_CLOSED_DATES = new Set([
   "2026-10-06",
   "2026-10-17",
   "2026-10-21",
+  "2026-11-10",
 ]);
 
 export type TemporaryClosure = { closed: boolean; title: string; detail: string };
