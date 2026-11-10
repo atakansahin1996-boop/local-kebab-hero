@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useProductAvailability, isProductAvailable } from "@/hooks/useProductAvailability";
+import { useTemporaryRestrictions } from "@/hooks/useTemporaryRestrictions";
 
 type Category = {
   name: string;
@@ -86,6 +87,12 @@ const menuData: Category[] = [
 const MenuSection = () => {
   const [active, setActive] = useState(0);
   const { data: availability } = useProductAvailability();
+  const { isHidden } = useTemporaryRestrictions();
+  const visibleMenu = menuData.map((category) => ({
+    ...category,
+    items: category.items.filter((item) => !isHidden(item.productKey)),
+  })).filter((category) => category.items.length > 0);
+  const activeCategory = visibleMenu[active] ?? visibleMenu[0];
 
   return (
     <section id="carta" className="py-16 bg-background">
@@ -99,7 +106,7 @@ const MenuSection = () => {
 
         {/* Category tabs */}
         <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {menuData.map((cat, i) => (
+          {visibleMenu.map((cat, i) => (
             <button
               key={cat.name}
               onClick={() => setActive(i)}
@@ -116,7 +123,7 @@ const MenuSection = () => {
 
         {/* Items grid */}
         <div className="space-y-3">
-          {menuData[active].items.map((item) => {
+          {activeCategory?.items.map((item) => {
             const available = isProductAvailable(availability, item.productKey);
             return (
               <div

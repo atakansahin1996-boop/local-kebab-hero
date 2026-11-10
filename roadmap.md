@@ -1,0 +1,3 @@
+- [x] Hide all wing products until November 12, 2026 (Madrid), including saved carts.
+- [x] Close online ordering on November 11, 2026, and restore the normal schedule afterward.
+- [x] Test date boundaries and verify the ordering screens.
