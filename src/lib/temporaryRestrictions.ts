@@ -25,13 +25,6 @@ export const getTemporaryClosure = (date = new Date()): TemporaryClosure => {
       detail: "Estamos cerrados por vacaciones. No se pueden realizar pedidos hasta el 25 de agosto de 2026.",
     };
   }
-  if (day === "2026-11-11") {
-    return {
-      closed: true,
-      title: "HOY ESTAMOS CERRADOS",
-      detail: "Hoy miércoles 11 de noviembre no abrimos. Volvemos el jueves 12 de noviembre en el horario habitual.",
-    };
-  }
   if (EXTRA_CLOSED_DATES.has(day)) {
     return {
       closed: true,
