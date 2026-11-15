@@ -100,8 +100,40 @@ type CartItem = {
   removedIngredients: string[];
   meatType: MeatType;
   sideType?: SideType;
-  extras: string[];
+  extras: Record<string, number>;
   drink: string;
+};
+
+const MAX_EXTRA_QTY = 10;
+
+const extrasToList = (extras: Record<string, number>): string[] =>
+  EXTRAS.filter((e) => (extras[e.name] ?? 0) > 0).map((e) =>
+    extras[e.name] > 1 ? `${e.name} x${extras[e.name]}` : e.name
+  );
+
+const extrasToKey = (extras: Record<string, number>): string =>
+  Object.entries(extras)
+    .filter(([, qty]) => qty > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, qty]) => `${name}:${qty}`)
+    .join("|");
+
+const normalizeExtras = (extras: unknown): Record<string, number> => {
+  if (Array.isArray(extras)) {
+    // Migrate old format (string[]) to quantities
+    return extras.reduce<Record<string, number>>((acc, name) => {
+      if (typeof name === "string") acc[name] = (acc[name] ?? 0) + 1;
+      return acc;
+    }, {});
+  }
+  if (extras && typeof extras === "object") {
+    return Object.entries(extras as Record<string, unknown>).reduce<Record<string, number>>((acc, [name, qty]) => {
+      const n = typeof qty === "number" ? Math.floor(qty) : 0;
+      if (n > 0) acc[name] = Math.min(n, MAX_EXTRA_QTY);
+      return acc;
+    }, {});
+  }
+  return {};
 };
 
 const ORDER_SECTION_ID = "pedido-online";
@@ -171,7 +203,10 @@ const hasMeatOption = (item: MenuItem) =>
 const loadCartFromStorage = (): CartItem[] => {
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
-    if (stored) return (JSON.parse(stored) as CartItem[]).filter((c) => !isProductTemporarilyHidden(c.item.name));
+    if (stored)
+      return (JSON.parse(stored) as CartItem[])
+        .map((c) => ({ ...c, extras: normalizeExtras(c.extras) }))
+        .filter((c) => !isProductTemporarilyHidden(c.item.name));
   } catch {}
   return [];
 };
@@ -264,10 +299,10 @@ const OrderForm = () => {
     CATEGORIES_WITH_INGREDIENTS.includes(item.category);
 
   const getItemTotal = (c: CartItem) => {
-    const extrasTotal = c.extras.reduce((sum, extraName) => {
-      const extra = EXTRAS.find((e) => e.name === extraName);
-      return sum + (extra?.price ?? 0);
-    }, 0);
+    const extrasTotal = EXTRAS.reduce(
+      (sum, extra) => sum + extra.price * (c.extras[extra.name] ?? 0),
+      0
+    );
     return c.item.price + extrasTotal;
   };
 
@@ -281,7 +316,7 @@ const OrderForm = () => {
       removedIngredients: [],
       meatType: "Ternera",
       sideType: hasSideChoice(item) ? "Patatas" : undefined,
-      extras: [],
+      extras: {},
       drink: isMenu(item) ? "Coca Cola" : "",
     };
 
@@ -336,13 +371,14 @@ const OrderForm = () => {
     );
   };
 
-  const toggleExtra = (itemId: string, extraName: string) => {
+  const setExtraQty = (itemId: string, extraName: string, qty: number) => {
+    const clamped = Math.max(0, Math.min(MAX_EXTRA_QTY, qty));
     setCart((prev) =>
       prev.map((c) => {
         if (c.id !== itemId) return c;
-        const extras = c.extras.includes(extraName)
-          ? c.extras.filter((e) => e !== extraName)
-          : [...c.extras, extraName];
+        const extras = { ...c.extras };
+        if (clamped === 0) delete extras[extraName];
+        else extras[extraName] = clamped;
         return { ...c, extras };
       })
     );
