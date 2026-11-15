@@ -100,8 +100,40 @@ type CartItem = {
   removedIngredients: string[];
   meatType: MeatType;
   sideType?: SideType;
-  extras: string[];
+  extras: Record<string, number>;
   drink: string;
+};
+
+const MAX_EXTRA_QTY = 10;
+
+const extrasToList = (extras: Record<string, number>): string[] =>
+  EXTRAS.filter((e) => (extras[e.name] ?? 0) > 0).map((e) =>
+    extras[e.name] > 1 ? `${e.name} x${extras[e.name]}` : e.name
+  );
+
+const extrasToKey = (extras: Record<string, number>): string =>
+  Object.entries(extras)
+    .filter(([, qty]) => qty > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, qty]) => `${name}:${qty}`)
+    .join("|");
+
+const normalizeExtras = (extras: unknown): Record<string, number> => {
+  if (Array.isArray(extras)) {
+    // Migrate old format (string[]) to quantities
+    return extras.reduce<Record<string, number>>((acc, name) => {
+      if (typeof name === "string") acc[name] = (acc[name] ?? 0) + 1;
+      return acc;
+    }, {});
+  }
+  if (extras && typeof extras === "object") {
+    return Object.entries(extras as Record<string, unknown>).reduce<Record<string, number>>((acc, [name, qty]) => {
+      const n = typeof qty === "number" ? Math.floor(qty) : 0;
+      if (n > 0) acc[name] = Math.min(n, MAX_EXTRA_QTY);
+      return acc;
+    }, {});
+  }
+  return {};
 };
 
 const ORDER_SECTION_ID = "pedido-online";
@@ -171,7 +203,10 @@ const hasMeatOption = (item: MenuItem) =>
 const loadCartFromStorage = (): CartItem[] => {
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
-    if (stored) return (JSON.parse(stored) as CartItem[]).filter((c) => !isProductTemporarilyHidden(c.item.name));
+    if (stored)
+      return (JSON.parse(stored) as CartItem[])
+        .map((c) => ({ ...c, extras: normalizeExtras(c.extras) }))
+        .filter((c) => !isProductTemporarilyHidden(c.item.name));
   } catch {}
   return [];
 };
@@ -264,10 +299,10 @@ const OrderForm = () => {
     CATEGORIES_WITH_INGREDIENTS.includes(item.category);
 
   const getItemTotal = (c: CartItem) => {
-    const extrasTotal = c.extras.reduce((sum, extraName) => {
-      const extra = EXTRAS.find((e) => e.name === extraName);
-      return sum + (extra?.price ?? 0);
-    }, 0);
+    const extrasTotal = EXTRAS.reduce(
+      (sum, extra) => sum + extra.price * (c.extras[extra.name] ?? 0),
+      0
+    );
     return c.item.price + extrasTotal;
   };
 
@@ -281,7 +316,7 @@ const OrderForm = () => {
       removedIngredients: [],
       meatType: "Ternera",
       sideType: hasSideChoice(item) ? "Patatas" : undefined,
-      extras: [],
+      extras: {},
       drink: isMenu(item) ? "Coca Cola" : "",
     };
 
@@ -336,13 +371,14 @@ const OrderForm = () => {
     );
   };
 
-  const toggleExtra = (itemId: string, extraName: string) => {
+  const setExtraQty = (itemId: string, extraName: string, qty: number) => {
+    const clamped = Math.max(0, Math.min(MAX_EXTRA_QTY, qty));
     setCart((prev) =>
       prev.map((c) => {
         if (c.id !== itemId) return c;
-        const extras = c.extras.includes(extraName)
-          ? c.extras.filter((e) => e !== extraName)
-          : [...c.extras, extraName];
+        const extras = { ...c.extras };
+        if (clamped === 0) delete extras[extraName];
+        else extras[extraName] = clamped;
         return { ...c, extras };
       })
     );
@@ -363,12 +399,12 @@ const OrderForm = () => {
   const groupedForMessage = useMemo(() => {
     const grouped = new Map<
       string,
-      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; sideType?: SideType; extras: string[]; drink: string; unitPrice: number }
+      { qty: number; item: MenuItem; removedIngredients: string[]; meatType: MeatType; sideType?: SideType; extras: Record<string, number>; drink: string; unitPrice: number }
     >();
 
     cart.forEach((cartItem) => {
       const ingredientsKey = [...cartItem.removedIngredients].sort().join("|");
-      const extrasKey = [...cartItem.extras].sort().join("|");
+      const extrasKey = extrasToKey(cartItem.extras);
       const key = `${cartItem.item.name}|${cartItem.meatType}|${cartItem.sideType ?? ""}|${ingredientsKey}|${extrasKey}|${cartItem.drink}`;
       const existing = grouped.get(key);
 
@@ -397,7 +433,8 @@ const OrderForm = () => {
         let line = `• ${c.qty}x ${c.item.name}`;
         if (hasMeatOption(c.item)) line += ` (${c.meatType})`;
         if (hasSideChoice(c.item) && c.sideType) line += ` 🍟 ${c.sideType}`;
-        if (c.extras.length > 0) line += ` + ${c.extras.join(", ")}`;
+        const extrasList = extrasToList(c.extras);
+        if (extrasList.length > 0) line += ` + ${extrasList.join(", ")}`;
         if (c.drink) line += ` 🥤 ${c.drink}`;
         line += ` — ${(c.unitPrice * c.qty).toFixed(2)}€`;
         if (c.removedIngredients.length > 0) {
@@ -542,7 +579,7 @@ const OrderForm = () => {
               {canSelectSide && c.sideType && (
                 <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🍟 {c.sideType}</span>
               )}
-              {c.extras.map((extra) => (
+              {extrasToList(c.extras).map((extra) => (
                 <span key={extra} className="text-xs bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">+{extra}</span>
               ))}
               {c.drink && (
@@ -627,18 +664,36 @@ const OrderForm = () => {
                 <div>
                   <p className="text-xs text-muted-foreground font-medium mb-1.5">➕ Extras:</p>
                   <div className="space-y-1.5">
-                    {EXTRAS.map((extra) => (
-                      <label key={`${c.id}-extra-${extra.name}`} className="flex items-center justify-between gap-2 cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={c.extras.includes(extra.name)}
-                            onCheckedChange={() => toggleExtra(c.id, extra.name)}
-                          />
+                    {EXTRAS.map((extra) => {
+                      const qty = c.extras[extra.name] ?? 0;
+                      return (
+                        <div key={`${c.id}-extra-${extra.name}`} className="flex items-center justify-between gap-2">
                           <span className="text-sm text-foreground">{extra.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-primary font-semibold">+{extra.price.toFixed(2)}€</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setExtraQty(c.id, extra.name, qty - 1)}
+                                disabled={qty === 0}
+                                className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground hover:bg-primary/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Quitar ${extra.name}`}
+                              >
+                                <Minus size={12} />
+                              </button>
+                              <span className="w-5 text-center text-sm font-semibold text-foreground">{qty}</span>
+                              <button
+                                onClick={() => setExtraQty(c.id, extra.name, qty + 1)}
+                                disabled={qty >= MAX_EXTRA_QTY}
+                                className="w-6 h-6 rounded bg-muted flex items-center justify-center text-foreground hover:bg-primary/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Añadir ${extra.name}`}
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <span className="text-xs text-primary font-semibold">+{extra.price.toFixed(2)}€</span>
-                      </label>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -861,7 +916,7 @@ const OrderForm = () => {
             <div className="space-y-2 mb-6">
               {groupedForMessage.map((c, index) => (
                 <div
-                  key={`${c.item.name}-${index}-${c.meatType}-${c.removedIngredients.join("-")}-${c.extras.join("-")}`}
+                  key={`${c.item.name}-${index}-${c.meatType}-${c.removedIngredients.join("-")}-${extrasToKey(c.extras)}`}
                   className="bg-card rounded-lg px-4 py-3 border border-border"
                 >
                   <div className="flex items-center justify-between">
@@ -871,9 +926,9 @@ const OrderForm = () => {
                         {hasMeatOption(c.item) && ` (${c.meatType})`}
                         {hasSideChoice(c.item) && c.sideType && ` · 🍟 ${c.sideType}`}
                       </p>
-                      {c.extras.length > 0 && (
+                      {extrasToList(c.extras).length > 0 && (
                         <p className="text-xs text-accent-foreground mt-0.5">
-                          + {c.extras.join(", ")}
+                          + {extrasToList(c.extras).join(", ")}
                         </p>
                       )}
                       {c.drink && (
