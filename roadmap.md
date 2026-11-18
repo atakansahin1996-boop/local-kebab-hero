@@ -2,3 +2,4 @@
 - [x] Close online ordering on November 11, 2026, and restore the normal schedule afterward.
 - [x] Test date boundaries and verify the ordering screens.
 - [x] Reopen the restaurant on November 11, 2026 in the normal schedule (wings still hidden until November 12).
+- [x] Hide wings on November 18, 2026 only (back November 19).

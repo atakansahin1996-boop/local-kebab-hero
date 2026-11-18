@@ -24,4 +24,11 @@ describe("November temporary restrictions (Europe/Madrid)", () => {
     expect(getTemporaryClosure(new Date("2026-11-11T22:59:59Z")).closed).toBe(false);
     expect(getTemporaryClosure(new Date("2026-11-11T23:00:00Z")).closed).toBe(false);
   });
+
+  it("hides wings only on November 18, restoring them on November 19", () => {
+    expect(isProductTemporarilyHidden("7 alitas", new Date("2026-11-18T14:39:00Z"))).toBe(true);
+    expect(isProductTemporarilyHidden("Menú Alitas", new Date("2026-11-18T22:59:59Z"))).toBe(true);
+    expect(isProductTemporarilyHidden("7 alitas", new Date("2026-11-18T23:00:00Z"))).toBe(false);
+    expect(isProductTemporarilyHidden("Menú Kebab", new Date("2026-11-18T14:39:00Z"))).toBe(false);
+  });
 });

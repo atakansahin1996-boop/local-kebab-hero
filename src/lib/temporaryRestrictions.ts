@@ -3,7 +3,8 @@ export const getMadridDateString = (date = new Date()) =>
 
 export const isProductTemporarilyHidden = (productName: string, date = new Date()) => {
   const day = getMadridDateString(date);
-  return day >= "2026-11-10" && day < "2026-11-12" && productName.toLowerCase().includes("alitas");
+  const hidden = (day >= "2026-11-10" && day < "2026-11-12") || day === "2026-11-18";
+  return hidden && productName.toLowerCase().includes("alitas");
 };
 
 const EXTRA_CLOSED_DATES = new Set([
