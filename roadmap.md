@@ -3,3 +3,4 @@
 - [x] Test date boundaries and verify the ordering screens.
 - [x] Reopen the restaurant on November 11, 2026 in the normal schedule (wings still hidden until November 12).
 - [x] Hide wings on November 18, 2026 only (back November 19).
+- [x] Close the restaurant on November 24, 2026 (Madrid) for lack of stock; normal schedule resumes next open day.
