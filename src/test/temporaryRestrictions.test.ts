@@ -41,6 +41,16 @@ describe("November temporary restrictions (Europe/Madrid)", () => {
     expect(getTemporaryClosure(new Date("2026-11-23T22:59:59Z")).closed).toBe(false);
   });
 
+  it("closes November 25 in Madrid for lack of stock, throughout the entire day", () => {
+    const closure = getTemporaryClosure(new Date("2026-11-25T13:00:00Z"));
+    expect(closure.closed).toBe(true);
+    expect(closure.title).toBe("HOY ESTAMOS CERRADOS");
+    expect(closure.detail).toContain("se nos ha agotado el género");
+    expect(getTemporaryClosure(new Date("2026-11-24T22:59:59Z")).closed).toBe(true);
+    expect(getTemporaryClosure(new Date("2026-11-25T22:59:59Z")).closed).toBe(true);
+    expect(getTemporaryClosure(new Date("2026-11-26T13:00:00Z")).closed).toBe(false);
+  });
+
   it("hides wings only on November 18, restoring them on November 19", () => {
     expect(isProductTemporarilyHidden("7 alitas", new Date("2026-11-18T14:39:00Z"))).toBe(true);
     expect(isProductTemporarilyHidden("Menú Alitas", new Date("2026-11-18T22:59:59Z"))).toBe(true);
