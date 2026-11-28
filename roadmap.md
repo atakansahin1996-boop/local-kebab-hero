@@ -5,4 +5,5 @@
 - [x] Hide wings on November 18, 2026 only (back November 19).
 - [x] Close the restaurant on November 24, 2026 (Madrid) for lack of stock; normal schedule resumes next open day.
 - [x] Close the restaurant on November 25, 2026 (Madrid) for lack of stock; normal schedule resumes Thursday November 26.
-- [ ] Send the owner a copy of every order at atakansahin1996@gmail.com, preserving WhatsApp ordering. Blocked until the owner configures their sender domain through email setup; then implement storage, email notification, and verify delivery.
+- [x] Send order copies via the owner's chosen FormSubmit relay before WhatsApp, with a three-second maximum wait and no stored submissions; payload, failure, and timeout verified (14 automated tests pass).
+- [ ] Confirm inbox delivery after the owner clicks FormSubmit's “Activate Form” link emailed to atakansahin1996@gmail.com. The real test was accepted but reported activation required; WhatsApp continued correctly.

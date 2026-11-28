@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useProductAvailability, isProductAvailable } from "@/hooks/useProductAvailability";
 import { useTemporaryRestrictions } from "@/hooks/useTemporaryRestrictions";
 import { getTemporaryClosure, isProductTemporarilyHidden } from "@/lib/temporaryRestrictions";
+import { sendOrderCopy } from "@/lib/orderEmail";
 
 type MenuItem = { name: string; price: number; category: string };
 
@@ -468,14 +469,32 @@ const OrderForm = () => {
     return lines.filter(Boolean).join("\n");
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (getTemporaryClosure().closed || !getOrderScheduleStatus().open) return;
     if (cart.some((c) => isProductTemporarilyHidden(c.item.name))) return;
     if (cart.length === 0 || !name.trim() || !phone.trim()) return;
     if (method === "domicilio" && !address.trim()) return;
     if (payment === "efectivo" && (!billAmount || (billAmount > 0 && billAmount < total))) return;
-    const msg = encodeURIComponent(buildWhatsAppMessage());
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+    const message = buildWhatsAppMessage();
+    const msg = encodeURIComponent(message);
+    const emailCopy = sendOrderCopy({
+      name,
+      phone,
+      address: method === "domicilio" ? address : "Recogida en local",
+      message,
+      total: `${total.toFixed(2)}€`,
+      payment: payment === "tarjeta"
+        ? "Tarjeta en domicilio (datáfono)"
+        : `Efectivo${billAmount && billAmount > 0 ? ` (billete de ${billAmount}€)` : ""}`,
+      notes,
+    });
+    // Reserve a tab during the click; navigate to WhatsApp only after the email attempt.
+    const whatsappTab = window.open("about:blank", "_blank");
+    if (whatsappTab) whatsappTab.opener = null;
+    await emailCopy;
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
+    if (whatsappTab && !whatsappTab.closed) whatsappTab.location.href = whatsappUrl;
+    else window.location.assign(whatsappUrl);
     // Clear cart after sending
     setCart([]);
     localStorage.removeItem(CART_STORAGE_KEY);

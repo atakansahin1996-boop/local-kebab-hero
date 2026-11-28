@@ -1,1 +1,2 @@
 - Keep dated closures and product hiding rules in the shared temporary restrictions module, using Europe/Madrid; both menu views and ordering guards must apply the same rules to avoid inconsistent availability.
+- Keep the best-effort order email relay in a frontend helper with a bounded wait; reserve a blank tab during the send click so asynchronous email delivery cannot cause WhatsApp popup blocking.
